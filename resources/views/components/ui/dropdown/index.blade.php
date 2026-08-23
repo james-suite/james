@@ -29,6 +29,7 @@
     x-data="{
         open: false,
         closing: false,
+        rendered: false,
         closeTimer: null,
         syncTrigger() {
             const trigger = this.$root.querySelector('button, a');
@@ -44,6 +45,16 @@
             window.clearTimeout(this.closeTimer);
             this.closing = false;
             this.open = true;
+            this.rendered = false;
+
+            this.$nextTick(() => {
+                void this.$refs.menu.offsetWidth;
+                window.requestAnimationFrame(() => {
+                    if (this.open) {
+                        this.rendered = true;
+                    }
+                });
+            });
         },
         closeMenu() {
             if (!this.open) {
@@ -51,6 +62,7 @@
             }
 
             this.open = false;
+            this.rendered = false;
             this.closing = true;
             window.clearTimeout(this.closeTimer);
 
@@ -85,7 +97,7 @@
         x-show="open || closing"
         x-cloak
         data-origin="{{ $dropdownOrigin }}"
-        :class="{ 'is-open': open, 'is-closing': closing }"
+        :class="{ 'is-open': open && rendered, 'is-closing': closing }"
         @class([
         't-dropdown absolute z-50 rounded-lg border bg-white p-1 shadow-lg',
         $dropdownPosition,
