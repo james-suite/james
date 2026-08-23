@@ -2,7 +2,7 @@
 
 <div x-data="{ open: false }">
     <aside
-        class="fixed top-0 left-0 h-screen w-64 border-e bg-neutral-100 border-neutral-300 p-4 flex flex-col gap-4 z-40 transition-transform duration-300 ease-in-out lg:translate-x-0"
+        class="fixed top-0 left-0 h-screen w-64 border-e bg-neutral-100 border-neutral-300 p-4 flex flex-col gap-4 z-40 transition-transform motion-duration-fast motion-ease-smooth-out lg:translate-x-0"
         :class="{ '-translate-x-full': !open }" x-cloak>
         <div class="flex items-center">
             <a href="{{ route('dashboard') }}">
@@ -15,7 +15,7 @@
             </button>
         </div>
 
-        <nav class="flex flex-col overflow-visible min-h-auto space-y-[2px]">
+        <nav class="flex flex-col min-h-auto space-y-[2px]">
             {{ $slot }}
         </nav>
 
@@ -63,7 +63,14 @@
 
     </aside>
 
-    <div class="fixed inset-0 bg-black/10 z-30 lg:hidden" x-cloak x-show="open" @click="open = false"></div>
+    <div class="fixed inset-0 bg-black/10 z-30 lg:hidden" x-cloak x-show="open"
+        x-transition:enter="transition-opacity motion-duration-fast motion-ease-smooth-out"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition-opacity motion-duration-quick motion-ease-smooth-out"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        @click="open = false"></div>
 
     <header class="flex items-center px-6 w-full min-h-14 lg:hidden {{ $headerBg }}">
         <button class="cursor-pointer rounded-lg p-1 hover:bg-neutral-200" @click="open = !open">

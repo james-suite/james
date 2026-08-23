@@ -37,7 +37,7 @@
                         <span class="font-medium text-neutral-900">{{ formatShort($transaction->date) }}</span>
                     </x-table.cell>
 
-                <x-table.cell class="overflow-visible!">
+                <x-table.cell>
                     <div class="flex min-w-0 items-center gap-2">
                         <span class="min-w-0 flex-1 truncate font-semibold text-neutral-900">
                             {{ $transaction->description }}
@@ -80,7 +80,7 @@
                     @endif
                 </x-table.cell>
 
-                <x-table.cell class="overflow-visible!">
+                <x-table.cell>
                     @php
                         $tags = $transaction->tags;
                         $primary = $tags->firstWhere('pivot.is_primary', true);
@@ -92,18 +92,16 @@
                     
                     <div class="flex min-w-0 items-center gap-1.5">
                         @foreach($visibleTags as $tag)
-                            <x-tooltip :text="$tag->name" id="transaction-tag-tooltip-{{ $transaction->id }}-{{ $tag->id }}">
-                                <span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xxs font-semibold"
-                                      style="background-color: {{ $tag->color_hex }}15; color: {{ $tag->color_hex }}; border-color: {{ $tag->color_hex }}40;">
-                                    @if(isset($primary) && $tag->id === $primary->id)
-                                        <span class="relative -ml-0.5 shrink-0 text-yellow-500">
-                                            <x-heroicon-s-star class="size-2.5" />
-                                        </span>
-                                    @endif
-                                    <x-dynamic-component :component="$tag->icon" class="size-3" />
-                                    <span class="max-w-[80px] truncate">{{ $tag->name }}</span>
-                                </span>
-                            </x-tooltip>
+                            <span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xxs font-semibold"
+                                  style="background-color: {{ $tag->color_hex }}15; color: {{ $tag->color_hex }}; border-color: {{ $tag->color_hex }}40;">
+                                @if(isset($primary) && $tag->id === $primary->id)
+                                    <span class="relative -ml-0.5 shrink-0 text-yellow-500">
+                                        <x-heroicon-s-star class="size-2.5" />
+                                    </span>
+                                @endif
+                                <x-dynamic-component :component="$tag->icon" class="size-3" />
+                                <span class="max-w-[80px] truncate">{{ $tag->name }}</span>
+                            </span>
                         @endforeach
 
                         @if($remainingCount > 0)

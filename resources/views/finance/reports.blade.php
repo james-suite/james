@@ -19,12 +19,12 @@
         <!-- Filters Bar -->
         <div class="w-full mb-6">
             <x-filter-bar :show-search="false" :show-mobile-toggle="false" action="{{ route('financial.reports') }}" class="pe-2 py-3" button-class="sm:w-11 h-11" align="end">
-                <div class="flex flex-col sm:flex-row items-end gap-4 px-2 py-0">
-                <div class="flex items-center gap-4 w-full md:w-auto flex-wrap sm:flex-nowrap">
-                    <!-- Period -->
-                    <div class="flex flex-col w-full sm:w-48">
-                        <label class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Período</label>
-                        <x-select name="period" class="w-full" x-model="period" @change="submitIfNotCustom()">
+                <div class="flex flex-col sm:flex-row items-stretch divide-y sm:divide-y-0 sm:divide-x divide-neutral-200">
+
+                    {{-- Period --}}
+                    <div class="flex flex-col justify-center py-1 sm:py-0 px-1 sm:px-3">
+                        <label class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider pl-3 mb-0.5">Período</label>
+                        <x-filter-bar.select name="period" x-model="period" @change="submitIfNotCustom()">
                             <option value="this_month" @selected($period === 'this_month')>Este Mês</option>
                             <option value="last_month" @selected($period === 'last_month')>Mês Passado</option>
                             <option value="last_3m" @selected($period === 'last_3m')>Últimos 3 Meses</option>
@@ -36,47 +36,57 @@
                             <option value="all_time" @selected($period === 'all_time')>Todo o Tempo</option>
                             <option value="until_today" @selected($period === 'until_today')>Até Hoje</option>
                             <option value="custom" @selected($period === 'custom')>Personalizado</option>
-                        </x-select>
+                        </x-filter-bar.select>
                     </div>
 
-                    <!-- Custom Dates -->
-                    <div class="flex flex-col w-full sm:w-36">
-                        <label class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Início</label>
-                        <input type="date" name="startDate" value="{{ $startDate }}"
-                               @change="period = 'custom'"
-                               x-bind:disabled="period === 'all_time' || period === 'until_today'"
-                               class="w-full border-neutral-200 text-sm rounded-xl block py-2.5 px-4 bg-white shadow-xs focus:shadow-lg text-neutral-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/40 transition-colors disabled:opacity-50">
-                    </div>
-                    <div class="flex flex-col w-full sm:w-36">
-                        <label class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Fim</label>
-                        <input type="date" name="endDate" value="{{ $endDate }}"
-                               @change="period = 'custom'"
-                               x-bind:disabled="period === 'all_time' || period === 'until_today'"
-                               class="w-full border-neutral-200 text-sm rounded-xl block py-2.5 px-4 bg-white shadow-xs focus:shadow-lg text-neutral-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/40 transition-colors disabled:opacity-50">
-                    </div>
-                </div>
+                    {{-- Date range --}}
+                    <div class="flex flex-col sm:flex-row items-stretch divide-y sm:divide-y-0 sm:divide-x divide-neutral-200">
 
-                <div class="flex items-center gap-4 w-full md:w-auto">
-                    <!-- Accounts -->
-                    <div class="flex flex-col w-full md:w-56">
-                        <label class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">Contas</label>
-                        <x-select name="account" class="w-full" @change="submit()">
+                        <div class="flex flex-col justify-center py-1 sm:py-0 px-1 sm:px-3">
+                            <label class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider pl-3 mb-0.5">Início</label>
+                            <div class="relative flex items-center transition-opacity" :class="period !== 'custom' && 'opacity-50'">
+                                <span class="pointer-events-none absolute left-2.5 flex items-center text-neutral-400">
+                                    <x-heroicon-o-calendar-days class="size-3.5 shrink-0" />
+                                </span>
+                                <input type="date" name="startDate" value="{{ $startDate }}"
+                                       @change="period = 'custom'"
+                                       x-bind:disabled="period !== 'custom'"
+                                       class="w-full sm:w-auto bg-transparent border-0 py-2 sm:py-1.5 pl-7 pr-2 text-sm text-neutral-600 focus:outline-none focus:ring-0 focus:bg-neutral-100 rounded-md cursor-pointer disabled:cursor-not-allowed transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&:disabled::-webkit-calendar-picker-indicator]:hidden">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col justify-center py-1 sm:py-0 px-1 sm:px-3">
+                            <label class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider pl-3 mb-0.5">Fim</label>
+                            <div class="relative flex items-center transition-opacity" :class="period !== 'custom' && 'opacity-50'">
+                                <span class="pointer-events-none absolute left-2.5 flex items-center text-neutral-400">
+                                    <x-heroicon-o-calendar-days class="size-3.5 shrink-0" />
+                                </span>
+                                <input type="date" name="endDate" value="{{ $endDate }}"
+                                       @change="period = 'custom'"
+                                       x-bind:disabled="period !== 'custom'"
+                                       class="w-full sm:w-auto bg-transparent border-0 py-2 sm:py-1.5 pl-7 pr-2 text-sm text-neutral-600 focus:outline-none focus:ring-0 focus:bg-neutral-100 rounded-md cursor-pointer disabled:cursor-not-allowed transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&:disabled::-webkit-calendar-picker-indicator]:hidden">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Accounts --}}
+                    <div class="flex flex-col justify-center py-1 sm:py-0 px-1 sm:px-3">
+                        <label class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider pl-3 mb-0.5">Contas</label>
+                        <x-filter-bar.select name="account" @change="submit()">
                             <option value="">Todas as Contas</option>
-                            
                             <optgroup label="Por Tipo">
                                 @foreach(\App\Enums\FinancialAccountType::cases() as $type)
                                     <option value="type:{{ $type->value }}" @selected($accountId === 'type:'.$type->value)>Todas: {{ $type->label() }}</option>
                                 @endforeach
                             </optgroup>
-
                             <optgroup label="Contas Específicas">
                                 @foreach($accounts as $acc)
                                     <option value="{{ $acc->id }}" @selected($accountId == $acc->id)>{{ $acc->name }}</option>
                                 @endforeach
                             </optgroup>
-                        </x-select>
+                        </x-filter-bar.select>
                     </div>
-                </div>
+
                 </div>
             </x-filter-bar>
         </div>

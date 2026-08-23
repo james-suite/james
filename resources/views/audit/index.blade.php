@@ -22,13 +22,16 @@
                 
                 <x-filter-bar.select name="user">
                     <option value="">Todos os causadores</option>
+                    <option value="system" @selected(request('user') === 'system')>Sistema</option>
                     @foreach($users as $user)
                         <option value="{{ $user->id }}" @selected(request('user') == $user->id)>{{ $user->name }}</option>
                     @endforeach
                 </x-filter-bar.select>
                 
-                <x-filter-bar.date name="date_start" value="{{ request('date_start') }}" title="Data Inicial" />
-                <x-filter-bar.date name="date_end" value="{{ request('date_end') }}" title="Data Final" />
+                <x-filter-bar.date-range
+                    name-start="date_start" value-start="{{ request('date_start') }}" title-start="Data Inicial"
+                    name-end="date_end"     value-end="{{ request('date_end') }}"   title-end="Data Final"
+                />
                 
                 <x-filter-bar.select name="sort">
                     <option value="newest" @selected(request('sort', 'newest') == 'newest')>Mais recentes</option>

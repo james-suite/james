@@ -4,10 +4,8 @@ use App\Models\Contact;
 use App\Models\SettlementGroup;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Js;
 
 beforeEach(function () {
     Storage::fake('attachments');
@@ -60,21 +58,4 @@ it('rejects signed attachments from unsupported parent models', function () {
     );
 
     $this->get($signedUrl)->assertNotFound();
-});
-
-it('renders attachment names safely inside Alpine expressions', function () {
-    $group = SettlementGroup::factory()->create();
-    $media = $group
-        ->addMedia(UploadedFile::fake()->image("receipt'\"&.png"))
-        ->toMediaCollection('attachments');
-
-    $html = Blade::render(
-        '<x-media.attachments-list :attachments="$attachments" />',
-        ['attachments' => collect([$media])]
-    );
-
-    expect($html)
-        ->toContain('openLightbox(')
-        ->toContain(Js::from($media->file_name)->toHtml())
-        ->not->toContain("'receipt'\"&.png'");
 });

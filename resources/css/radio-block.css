@@ -1,0 +1,25 @@
+.radio-block-group--sliding {
+    isolation: isolate;
+    position: relative;
+}
+
+.radio-block-group--sliding .radio-block-indicator {
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    inset: 0.25rem auto auto 0.25rem;
+    position: absolute;
+    transform: translate(0, 0);
+    transition: transform var(--duration-fast) var(--ease-bounce);
+    z-index: 0;
+}
+
+.radio-block-group--sliding .radio-block--sliding {
+    position: relative;
+    z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .radio-block-group--sliding .radio-block-indicator {
+        transition-duration: 0ms;
+    }
+}

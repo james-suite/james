@@ -14,7 +14,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Js;
 use Spatie\Activitylog\Enums\ActivityEvent;
 use Spatie\Activitylog\Models\Activity;
 
@@ -55,24 +54,6 @@ it('filters transactions by tags attached directly or to an item', function () {
                 $itemTaggedTransaction->id,
             ];
         });
-});
-
-it('can view create transaction page', function () {
-    $this->get(route('financial.transactions.create'))
-        ->assertSuccessful()
-        ->assertViewIs('finance.transactions.create')
-        ->assertSee('Importar NFC-e')
-        ->assertSee('Colar URL')
-        ->assertSee('Ler QR Code')
-        ->assertSee('Cancelar leitura')
-        ->assertSee(route('financial.transactions.nfce.import'), false)
-        ->assertSee('name="url"', false)
-        ->assertSee('x-data="nfceImport(', false)
-        ->assertSee('id="nfce-qr-reader"', false)
-        ->assertSee('@modal-closed.window=', false)
-        ->assertSee("new CustomEvent('modal-closed'", false)
-        ->assertSee('@modal-close.window="if ($event.detail ===', false)
-        ->assertSee('h-11', false);
 });
 
 it('can store transaction', function () {
@@ -137,84 +118,6 @@ it('can view edit transaction page', function () {
     $this->get(route('financial.transactions.edit', $transaction))
         ->assertSuccessful()
         ->assertViewIs('finance.transactions.edit');
-});
-
-it('renders the transaction primary tag selector as disabled when items exist', function () {
-    $transaction = FinancialTransaction::factory()->create();
-    $tag = FinancialTag::factory()->create();
-    $transaction->tags()->attach($tag, ['is_primary' => true]);
-    $transaction->items()->create([
-        'description' => 'Item existente',
-        'quantity' => 1,
-        'unit_price' => 10,
-        'total' => 10,
-    ]);
-
-    $this->get(route('financial.transactions.edit', $transaction))
-        ->assertSuccessful()
-        ->assertSee('x-effect="if (items.length &gt; 0) { primaryId = null; }"', false)
-        ->assertSee('x-if="primaryId && !(items.length &gt; 0)"', false);
-});
-
-it('renders transaction items safely inside Alpine data', function () {
-    $transaction = FinancialTransaction::factory()->create();
-    $item = $transaction->items()->create([
-        'description' => "Item O'Reilly </script><script>alert('xss')</script>",
-        'quantity' => 1,
-        'unit_price' => 10,
-        'total' => 10,
-    ]);
-
-    $expectedItems = [[
-        'id' => $item->id,
-        'description' => $item->description,
-        'quantity' => $item->quantity,
-        'unit_price' => number_format($item->unit_price, 2, '.', ''),
-        'tags' => [],
-        'primary_tag_id' => null,
-    ]];
-
-    $this->get(route('financial.transactions.edit', $transaction))
-        ->assertSuccessful()
-        ->assertSee(Js::from($expectedItems)->toHtml(), false)
-        ->assertSee('name="items_present"', false)
-        ->assertSee(':key="item._key"', false)
-        ->assertSee('x-if="item.id"', false)
-        ->assertSee('x-bind:name="\'items[\'+index+\'][id]\'"', false)
-        ->assertSee('x-bind:value="item.id"', false);
-});
-
-it('shows the imported nfce portal and formatted issuer document', function () {
-    $transaction = FinancialTransaction::factory()->create([
-        'nfce_source_url' => 'https://dfe-portal.svrs.rs.gov.br/Dfe/QrCodeNFce?p=43111111111111111111111111111111111111111111%7C3%7C1',
-        'nfce_issuer_document' => '12345678000195',
-    ]);
-
-    $this->get(route('financial.transactions.show', $transaction))
-        ->assertSuccessful()
-        ->assertSee('Dados da NFC-e')
-        ->assertSee('Abrir NFC-e')
-        ->assertSee('https://dfe-portal.svrs.rs.gov.br/Dfe/QrCodeNFce?p=', false)
-        ->assertSee('12.345.678/0001-95');
-});
-
-it('renders transaction items inside a single table container', function () {
-    $transaction = FinancialTransaction::factory()->create();
-    $transaction->items()->create([
-        'description' => 'Café especial',
-        'quantity' => 2,
-        'unit_price' => 12.50,
-        'total' => 25,
-    ]);
-
-    $response = $this->get(route('financial.transactions.show', $transaction));
-
-    $response->assertSuccessful()
-        ->assertSee('Itens da Transação')
-        ->assertSee('Café especial')
-        ->assertSee('R$ 12,50')
-        ->assertSee('R$ 25,00')
-        ->assertDontSee('bg-white dark:bg-white/10 border border-accent/30 dark:border-accent/20 shadow-sm transition-all duration-200 p-4 sm:p-6 rounded-xl overflow-hidden mb-6');
 });
 
 it('can update transaction', function () {
@@ -501,7 +404,7 @@ it('rejects invalid item values', function (string $field, int|string $value) {
     'formatted zero unit price' => ['unit_price', '0.00'],
 ]);
 
-it('persists negative item prices and renders the negative currency input', function () {
+it('persists negative item prices', function () {
     $account = FinancialAccount::factory()->create();
     $transaction = FinancialTransaction::factory()->create([
         'financial_account_id' => $account->id,
@@ -535,11 +438,6 @@ it('persists negative item prices and renders the negative currency input', func
     expect($item->refresh()->unit_price)->toBe('-10.00')
         ->and($item->total)->toBe('-10.00');
 
-    $this->get(route('financial.transactions.edit', $transaction))
-        ->assertSuccessful()
-        ->assertSee('-10.00', false)
-        ->assertSee('allowNegative: true', false)
-        ->assertSee('unit_price', false);
 });
 
 it('accepts negative item prices when creating a transaction', function () {

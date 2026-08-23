@@ -40,8 +40,12 @@ Sempre siga essas regras ao programar no James. Elas definem decisões arquitetu
    - No frontend, exiba logs com `causer_id` nulo como "Sistema / Rotina Automática".
 15. **Soft Deletes Obrigatório:** Todos os Models de negócio DEVEM utilizar `SoftDeletes` por padrão (exceto pivôs puros ou dados temporários como cache/tokens).
 
+## Testes
+
+16. **Testes focados em funcionalidade:** Testes devem validar regras de negócio, persistência, autorização, validação, integrações e respostas funcionais. Não crie testes para CSS, classes Tailwind, estrutura Blade, textos apresentados, atributos HTML ou detalhes de implementação visual. Testes de segurança devem validar o efeito funcional (por exemplo, acesso negado ou conteúdo perigoso não processado), sem depender de assertions sobre markup.
+
 ## Workflow e Ferramentas
 
-16. **Documentação:** Quando solicitada a criação ou atualização de documentação técnica, salve sempre dentro do diretório `/docs`.
-17. **Controle de Versão (Git):** NUNCA execute comandos de commit (`git commit`) automaticamente sem autorização explícita para aquela tarefa específica. Quando autorizado, utilize mensagens em inglês no padrão *Conventional Commits* (`feat:`, `fix:`, `refactor:`).
-18. **Evolução Contínua:** Sugira proativamente novas regras ao identificar padrões repetitivos de design ou código combinados durante o desenvolvimento.
+17. **Documentação:** Quando solicitada a criação ou atualização de documentação técnica, salve sempre dentro do diretório `/docs`.
+18. **Controle de Versão (Git):** NUNCA execute comandos de commit (`git commit`) automaticamente sem autorização explícita para aquela tarefa específica. Quando autorizado, utilize mensagens em inglês no padrão *Conventional Commits* (`feat:`, `fix:`, `refactor:`).
+19. **Evolução Contínua:** Sugira proativamente novas regras ao identificar padrões repetitivos de design ou código combinados durante o desenvolvimento.

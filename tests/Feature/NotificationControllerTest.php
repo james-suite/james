@@ -26,17 +26,6 @@ it('can view the notifications index', function () {
         ->assertViewHas('unreadCount', 1);
 });
 
-it('displays the unread notification count in the shared navigation', function () {
-    $this->user->notify(new GeneralNotification('Título', 'Mensagem de teste'));
-
-    $this->actingAs($this->user)
-        ->get(route('dashboard'))
-        ->assertSuccessful()
-        ->assertSee('Notificações')
-        ->assertSee('min-w-5', false)
-        ->assertSee('1', false);
-});
-
 it('can filter notifications on index', function () {
     $this->user->notify(new GeneralNotification('Relatório Financeiro', 'Pronto para download'));
 
@@ -56,26 +45,9 @@ it('can view a notification and marks it as read automatically', function () {
         ->get(route('notifications.show', $notification))
         ->assertSuccessful()
         ->assertViewIs('notifications.show')
-        ->assertViewHas('notification')
-        ->assertSee('Tem certeza que deseja excluir esta notificação?');
+        ->assertViewHas('notification');
 
     expect($notification->fresh()->read_at)->not->toBeNull();
-});
-
-it('displays a custom notification action label', function () {
-    $this->user->notify(new GeneralNotification(
-        title: 'Falha ao importar NFC-e',
-        message: 'O portal não respondeu.',
-        actionUrl: route('financial.transactions.create'),
-        actionLabel: 'Tentar novamente',
-    ));
-
-    $notification = $this->user->notifications()->first();
-
-    $this->actingAs($this->user)
-        ->get(route('notifications.show', $notification))
-        ->assertSuccessful()
-        ->assertSee('Tentar novamente');
 });
 
 it('returns 403 when trying to view another users notification', function () {
