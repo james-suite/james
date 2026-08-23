@@ -15,7 +15,7 @@
             </button>
         </div>
 
-        <nav class="flex flex-col overflow-visible min-h-auto space-y-[2px]">
+        <nav class="flex flex-col min-h-auto space-y-[2px]">
             {{ $slot }}
         </nav>
 

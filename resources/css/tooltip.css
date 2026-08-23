@@ -15,20 +15,8 @@
     display: inline-flex;
 }
 
-.t-tt-wrap:hover,
-.t-tt-wrap:focus-within {
-    z-index: 10;
-}
-
-.t-tt {
-    position: absolute;
-    z-index: 1000;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    width: max-content;
-    max-width: 16rem;
-    transform: translate(-50%, 0) scale(var(--tt-scale));
-    transform-origin: 50% 100%;
+/* Base tooltip styles shared between standard and teleported versions */
+.t-tt, .t-tt-teleported {
     padding: 8px 12px;
     border-radius: 8px;
     background: var(--tt-bg);
@@ -41,8 +29,25 @@
         0 0 0 1px rgb(15 23 42 / 8%),
         0 2px 6px 0 rgb(15 23 42 / 8%),
         0 8px 24px 0 rgb(15 23 42 / 12%);
-    opacity: 0;
     pointer-events: none;
+    width: max-content;
+    max-width: 16rem;
+}
+
+/* CSS-based standard tooltip (kept for backward compatibility if any static ones remain without Alpine) */
+.t-tt-wrap:hover,
+.t-tt-wrap:focus-within {
+    z-index: 50;
+}
+
+.t-tt {
+    position: absolute;
+    z-index: 1000;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translate(-50%, 0) scale(var(--tt-scale));
+    transform-origin: 50% 100%;
+    opacity: 0;
     transition:
         opacity var(--tt-out-dur) var(--tt-out-ease),
         transform var(--tt-out-dur) var(--tt-out-ease);
@@ -61,10 +66,41 @@
 .t-tt[data-position="bottom"] {
     top: calc(100% + 8px);
     bottom: auto;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, 0) scale(var(--tt-scale));
     transform-origin: 50% 0;
 }
 
 .t-tt-wrap:hover .t-tt[data-position="bottom"],
 .t-tt-wrap:focus-within .t-tt[data-position="bottom"] {
     transform: translate(-50%, 0) scale(1);
+}
+
+.t-tt[data-position="left"] {
+    top: 50%;
+    bottom: auto;
+    right: calc(100% + 8px);
+    left: auto;
+    transform: translate(0, -50%) scale(var(--tt-scale));
+    transform-origin: 100% 50%;
+}
+
+.t-tt-wrap:hover .t-tt[data-position="left"],
+.t-tt-wrap:focus-within .t-tt[data-position="left"] {
+    transform: translate(0, -50%) scale(1);
+}
+
+.t-tt[data-position="right"] {
+    top: 50%;
+    bottom: auto;
+    left: calc(100% + 8px);
+    right: auto;
+    transform: translate(0, -50%) scale(var(--tt-scale));
+    transform-origin: 0 50%;
+}
+
+.t-tt-wrap:hover .t-tt[data-position="right"],
+.t-tt-wrap:focus-within .t-tt[data-position="right"] {
+    transform: translate(0, -50%) scale(1);
 }

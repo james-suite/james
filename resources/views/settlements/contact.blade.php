@@ -183,7 +183,7 @@
                             {{ formatShort($settlement->date) }}
                         </x-table.cell>
                         
-                        <x-table.cell class="overflow-visible!">
+                        <x-table.cell>
                             <div class="flex min-w-0 items-center gap-2">
                                 <span class="min-w-0 flex-1 truncate font-medium text-neutral-700">{{ $settlement->description }}</span>
                                 @php

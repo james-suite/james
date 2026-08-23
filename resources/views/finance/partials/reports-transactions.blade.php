@@ -60,7 +60,7 @@
                         @endif
                     </x-table.cell>
 
-                    <x-table.cell class="overflow-visible!">
+                    <x-table.cell>
                         @php
                             $tags = $transaction->relationLoaded('tags') ? $transaction->tags : collect();
                             $primary = $tags->where('pivot.is_primary', true)->first();
@@ -70,18 +70,16 @@
 
                         <div class="flex min-w-0 items-center gap-1.5">
                             @foreach($visibleTags as $tag)
-                                <x-tooltip :text="$tag->name" id="report-transaction-tag-tooltip-{{ $transaction->id }}-{{ $tag->id }}">
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xxs font-semibold"
-                                          style="background-color: {{ $tag->color_hex }}15; color: {{ $tag->color_hex }}; border-color: {{ $tag->color_hex }}40;">
-                                        @if(isset($primary) && $tag->id === $primary->id)
-                                            <span class="relative -ml-0.5 shrink-0 text-yellow-500">
-                                                <x-heroicon-s-star class="size-2.5" />
-                                            </span>
-                                        @endif
-                                        <x-dynamic-component :component="$tag->icon" class="size-3" />
-                                        <span class="max-w-[80px] truncate">{{ $tag->name }}</span>
-                                    </span>
-                                </x-tooltip>
+                                <span class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xxs font-semibold"
+                                      style="background-color: {{ $tag->color_hex }}15; color: {{ $tag->color_hex }}; border-color: {{ $tag->color_hex }}40;">
+                                    @if(isset($primary) && $tag->id === $primary->id)
+                                        <span class="relative -ml-0.5 shrink-0 text-yellow-500">
+                                            <x-heroicon-s-star class="size-2.5" />
+                                        </span>
+                                    @endif
+                                    <x-dynamic-component :component="$tag->icon" class="size-3" />
+                                    <span class="max-w-[80px] truncate">{{ $tag->name }}</span>
+                                </span>
                             @endforeach
                             @if($tags->count() > 2)
                                 <x-tooltip :text="$others->skip($visibleTags->count() - ($primary ? 1 : 0))->pluck('name')->join(', ')" id="report-transaction-tags-more-tooltip-{{ $transaction->id }}">
