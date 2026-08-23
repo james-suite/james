@@ -31,7 +31,11 @@ class AuditController extends Controller
         }
 
         if ($request->filled('user')) {
-            $query->where('causer_id', $request->user);
+            if ($request->user === 'system') {
+                $query->whereNull('causer_id');
+            } else {
+                $query->where('causer_id', $request->user);
+            }
         }
 
         if ($request->filled('date_start')) {
@@ -132,7 +136,7 @@ class AuditController extends Controller
         $subject = $activity->subject;
         $subjectUrl = null;
 
-        if ($subject && ! method_exists($subject, 'trashed') || ($subject && method_exists($subject, 'trashed') && ! $subject->trashed())) {
+        if (($subject && ! method_exists($subject, 'trashed')) || ($subject && method_exists($subject, 'trashed') && ! $subject->trashed())) {
             try {
                 $routeMap = [
                     'FinancialAccount' => 'financial.accounts.show',

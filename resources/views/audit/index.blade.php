@@ -22,6 +22,7 @@
                 
                 <x-filter-bar.select name="user">
                     <option value="">Todos os causadores</option>
+                    <option value="system" @selected(request('user') === 'system')>Sistema</option>
                     @foreach($users as $user)
                         <option value="{{ $user->id }}" @selected(request('user') == $user->id)>{{ $user->name }}</option>
                     @endforeach
