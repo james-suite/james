@@ -83,7 +83,7 @@
                                 Restaurar
                             </x-button>
 
-                            <x-button type="button" color="outline" class="bg-white hover:bg-red-50 text-red-600 border-red-200" @click="openForceDelete({{ $contact->id }}, {{ Js::from($contact->name) }})">
+                            <x-button type="button" color="outline" class="bg-white hover:bg-red-50 text-red-600 border-red-200 interaction-delete" @click="openForceDelete({{ $contact->id }}, {{ Js::from($contact->name) }})">
                                 <x-heroicon-o-trash class="size-4" />
                                 Excluir
                             </x-button>
@@ -122,7 +122,7 @@
                                             <span class="whitespace-nowrap">Restaurar</span>
                                         </button>
 
-                                        <button type="button" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-neutral-100 cursor-pointer" @click="openForceDelete({{ $contact->id }}, {{ Js::from($contact->name) }})">
+                                        <button type="button" class="button-scale interaction-delete w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-neutral-100 cursor-pointer" @click="openForceDelete({{ $contact->id }}, {{ Js::from($contact->name) }})">
                                             <x-heroicon-o-trash class="size-5 shrink-0" />
                                             <span class="whitespace-nowrap">Excluir Permanentemente</span>
                                         </button>

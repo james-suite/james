@@ -7,12 +7,12 @@
 
 @php
     $baseClasses =
-        'cursor-pointer inline-flex items-center justify-center font-semibold px-3 py-2 min-h-11 text-base lg:text-sm [&>svg]:size-5 lg:[&>svg]:size-4 rounded-lg disabled:opacity-75 disabled:cursor-default gap-1.5 lg:gap-1';
+        'button-scale cursor-pointer inline-flex items-center justify-center font-semibold px-3 py-2 min-h-11 text-base lg:text-sm [&>svg]:size-5 lg:[&>svg]:size-4 rounded-lg disabled:opacity-75 disabled:cursor-default gap-1.5 lg:gap-1';
 
     $colorClasses = match ($color) {
         'red' => 'bg-red-500 hover:bg-red-700 text-white border-transparent',
         'accent' => 'bg-accent hover:bg-[color-mix(in_srgb,var(--color-accent),#000_10%)] text-white border-transparent',
-        'outline' => 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50',
+        'outline' => 'bg-white border border-neutral-200 hover:border-neutral-300 text-neutral-700 hover:bg-neutral-200 hover:text-neutral-900',
         'danger-outline' => 'bg-white text-red-500 hover:text-red-600 border border-red-200 hover:border-red-300 hover:bg-red-50 interaction-delete',
         'ghost' => 'bg-transparent text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 border-transparent',
         'danger-ghost' => 'bg-transparent text-red-400 hover:text-red-600 hover:bg-red-50 border-transparent interaction-delete',
