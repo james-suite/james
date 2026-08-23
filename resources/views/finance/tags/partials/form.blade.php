@@ -18,7 +18,7 @@
     ];
 @endphp
 
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6"
+<div class="grid grid-cols-1 lg:grid-cols-11 gap-4 sm:gap-6"
     x-data="{
         open: false,
         selectedColor: '{{ old('color_hex', $tag->color_hex ?? '#64748b') }}',
@@ -106,20 +106,21 @@
     </div>
 
     <!-- Coluna da Direita: Ícones -->
-    <div class="lg:col-span-7 flex flex-col gap-4 sm:gap-6">
+    <div class="lg:col-span-6 flex flex-col gap-4 sm:gap-6">
         <div class="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 sm:p-6 h-full flex flex-col gap-4 sm:gap-6">
             <!-- Grid de Ícones Sugeridos -->
             <div class="flex-1">
                 <label class="block text-sm font-medium text-neutral-700 mb-2">Selecione um Ícone</label>
-                <div class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+                <div class="grid w-full grid-cols-5 lg:grid-cols-10 gap-2">
                     @foreach($suggestedIcons as $icon)
-                        <x-tooltip text="{{ $icon }}" class="min-w-0">
+                        <x-tooltip text="{{ $icon }}" class="flex! w-full min-w-0">
                             <button type="button"
+                                aria-label="{{ $icon }}"
+                                class="button-scale w-full aspect-square cursor-pointer rounded-xl p-2 flex items-center justify-center text-neutral-600 bg-neutral-50 hover:bg-accent/10 hover:text-accent hover:ring-2 hover:ring-accent/50 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 z-0 hover:z-10 relative"
                                 @click="selectedIcon = '{{ $icon }}'"
-                                class="cursor-pointer p-2 rounded-xl flex flex-col items-center justify-center text-neutral-600 bg-neutral-50 hover:bg-accent/10 hover:text-accent hover:ring-2 hover:ring-accent/50 hover:scale-105 hover:shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:scale-105 z-0 hover:z-10 relative gap-1.5"
+                                :aria-pressed="selectedIcon === '{{ $icon }}'"
                                 :class="selectedIcon === '{{ $icon }}' ? 'bg-accent/10! text-accent! ring-2 ring-accent shadow-sm' : 'ring-1 ring-neutral-200'">
-                                <x-dynamic-component :component="$icon" class="size-6 shrink-0" />
-                                <span class="text-[9px] font-mono text-center leading-tight truncate w-full opacity-60">{{ str_replace(['heroicon-o-', 'phosphor-'], '', $icon) }}</span>
+                                <x-dynamic-component :component="$icon" class="size-7 shrink-0" />
                             </button>
                         </x-tooltip>
                     @endforeach
