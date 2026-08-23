@@ -13,35 +13,107 @@
 <span {{ $attributes->merge(['class' => 't-tt-wrap']) }}
     x-data="{
         show: false,
+        tooltipId: '{{ $tooltipId }}',
+        positionFrame: null,
+        showTooltip() {
+            window.dispatchEvent(new CustomEvent('james-tooltip-show', {
+                detail: { id: this.tooltipId },
+            }));
+
+            this.show = true;
+            this.schedulePosition();
+        },
+        hideTooltip() {
+            this.show = false;
+
+            if (this.positionFrame !== null) {
+                cancelAnimationFrame(this.positionFrame);
+                this.positionFrame = null;
+            }
+        },
+        hideIfAnotherTooltip(event) {
+            if (event.detail?.id !== this.tooltipId) {
+                this.hideTooltip();
+            }
+        },
+        schedulePosition() {
+            this.$nextTick(() => {
+                if (!this.show) return;
+
+                if (this.positionFrame !== null) {
+                    cancelAnimationFrame(this.positionFrame);
+                }
+
+                this.positionFrame = requestAnimationFrame(() => {
+                    this.positionFrame = null;
+                    this.updatePosition();
+                });
+            });
+        },
         updatePosition() {
             if (!this.show) return;
+            const tooltip = this.$refs.tt;
             const trigger = this.$el.getBoundingClientRect();
-            const tooltipWidth = this.$refs.tt.offsetWidth;
-            const tooltipHeight = this.$refs.tt.offsetHeight;
-            
-            let top, left;
-            if ('{{ $tooltipPosition }}' === 'top') {
-                top = trigger.top - tooltipHeight - 8;
+            const viewportPadding = 8;
+            const offset = 8;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const availableWidth = Math.max(viewportWidth - (viewportPadding * 2), 0);
+
+            tooltip.style.maxWidth = Math.min(256, availableWidth) + 'px';
+            tooltip.style.whiteSpace = availableWidth < 256 ? 'normal' : 'nowrap';
+
+            const tooltipWidth = tooltip.offsetWidth;
+            const tooltipHeight = tooltip.offsetHeight;
+            const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max));
+            const requestedPosition = '{{ $tooltipPosition }}';
+            const oppositePosition = {
+                top: 'bottom',
+                bottom: 'top',
+                left: 'right',
+                right: 'left',
+            };
+            const fits = {
+                top: trigger.top - tooltipHeight - offset >= viewportPadding,
+                bottom: trigger.bottom + tooltipHeight + offset <= viewportHeight - viewportPadding,
+                left: trigger.left - tooltipWidth - offset >= viewportPadding,
+                right: trigger.right + tooltipWidth + offset <= viewportWidth - viewportPadding,
+            };
+            const position = fits[requestedPosition]
+                ? requestedPosition
+                : (fits[oppositePosition[requestedPosition]] ? oppositePosition[requestedPosition] : requestedPosition);
+            const maxLeft = viewportWidth - tooltipWidth - viewportPadding;
+            const maxTop = viewportHeight - tooltipHeight - viewportPadding;
+
+            let top;
+            let left;
+
+            if (position === 'top' || position === 'bottom') {
+                top = position === 'top'
+                    ? trigger.top - tooltipHeight - offset
+                    : trigger.bottom + offset;
                 left = trigger.left + (trigger.width / 2) - (tooltipWidth / 2);
-            } else if ('{{ $tooltipPosition }}' === 'bottom') {
-                top = trigger.bottom + 8;
-                left = trigger.left + (trigger.width / 2) - (tooltipWidth / 2);
-            } else if ('{{ $tooltipPosition }}' === 'left') {
+                left = clamp(left, viewportPadding, maxLeft);
+                top = clamp(top, viewportPadding, maxTop);
+            } else {
                 top = trigger.top + (trigger.height / 2) - (tooltipHeight / 2);
-                left = trigger.left - tooltipWidth - 8;
-            } else if ('{{ $tooltipPosition }}' === 'right') {
-                top = trigger.top + (trigger.height / 2) - (tooltipHeight / 2);
-                left = trigger.right + 8;
+                left = position === 'left'
+                    ? trigger.left - tooltipWidth - offset
+                    : trigger.right + offset;
+                top = clamp(top, viewportPadding, maxTop);
+                left = clamp(left, viewportPadding, maxLeft);
             }
-            
-            this.$refs.tt.style.top = top + 'px';
-            this.$refs.tt.style.left = left + 'px';
+
+            tooltip.dataset.position = position;
+            tooltip.style.top = top + 'px';
+            tooltip.style.left = left + 'px';
         }
     }"
-    @mouseenter="show = true; $nextTick(() => updatePosition())"
-    @mouseleave="show = false"
-    @focusin="show = true; $nextTick(() => updatePosition())"
-    @focusout="show = false"
+    @james-tooltip-show.window="hideIfAnotherTooltip($event)"
+    @mouseenter="showTooltip()"
+    @mouseleave="hideTooltip()"
+    @focusin="showTooltip()"
+    @focusout="hideTooltip()"
     @scroll.window="updatePosition()"
     @resize.window="updatePosition()"
 >
