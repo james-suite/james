@@ -2,6 +2,7 @@
 
 use App\Models\FinancialAccount;
 use App\Models\FinancialTag;
+use App\Models\FinancialTransaction;
 use App\Models\User;
 
 beforeEach(function () {
@@ -15,6 +16,48 @@ it('can list accounts', function () {
     $this->get(route('financial.accounts.index'))
         ->assertSuccessful()
         ->assertViewIs('finance.accounts.index');
+});
+
+it('lists accounts by balance group and amount', function () {
+    $positiveLargest = FinancialAccount::factory()->create(['name' => 'Positiva Maior']);
+    $positiveSmallest = FinancialAccount::factory()->create(['name' => 'Positiva Menor']);
+    $negativeLargest = FinancialAccount::factory()->create(['name' => 'Negativa Maior']);
+    $negativeSmallest = FinancialAccount::factory()->create(['name' => 'Negativa Menor']);
+    FinancialAccount::factory()->create(['name' => 'Conta Zero B']);
+    FinancialAccount::factory()->create(['name' => 'Conta Zero A']);
+
+    FinancialTransaction::factory()->posted()->create([
+        'financial_account_id' => $positiveLargest->id,
+        'type' => 'income',
+        'amount' => 200,
+    ]);
+    FinancialTransaction::factory()->posted()->create([
+        'financial_account_id' => $positiveSmallest->id,
+        'type' => 'income',
+        'amount' => 100,
+    ]);
+    FinancialTransaction::factory()->posted()->create([
+        'financial_account_id' => $negativeLargest->id,
+        'type' => 'expense',
+        'amount' => 300,
+    ]);
+    FinancialTransaction::factory()->posted()->create([
+        'financial_account_id' => $negativeSmallest->id,
+        'type' => 'expense',
+        'amount' => 50,
+    ]);
+
+    $this->get(route('financial.accounts.index'))
+        ->assertViewHas('accounts', function ($accounts) {
+            return $accounts->getCollection()->pluck('name')->all() === [
+                'Positiva Maior',
+                'Positiva Menor',
+                'Negativa Maior',
+                'Negativa Menor',
+                'Conta Zero A',
+                'Conta Zero B',
+            ];
+        });
 });
 
 it('can view create account page', function () {

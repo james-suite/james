@@ -19,10 +19,14 @@ class FinancialAccountController extends Controller
      */
     public function index(): View
     {
+        $balanceSql = "(SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount WHEN type = 'expense' THEN -amount ELSE 0 END), 0) FROM financial_transactions WHERE financial_account_id = financial_accounts.id AND status = '".TransactionStatus::Posted->value."' AND deleted_at IS NULL)";
+
         $accounts = FinancialAccount::query()
             ->when(request('search'), fn ($query, $search) => $query->search($search, ['name']))
             ->withBalance()
-            ->latest()
+            ->orderByRaw("CASE WHEN $balanceSql > 0 THEN 0 WHEN $balanceSql < 0 THEN 1 ELSE 2 END")
+            ->orderByRaw("CASE WHEN $balanceSql > 0 THEN $balanceSql WHEN $balanceSql < 0 THEN ABS($balanceSql) ELSE 0 END DESC")
+            ->orderBy('name')
             ->paginate(18)
             ->withQueryString();
 
