@@ -6,17 +6,11 @@
 .radio-block-group--sliding .radio-block-indicator {
     border-radius: 0.5rem;
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
-    inset-block: 0.25rem;
-    inset-inline-start: 0.25rem;
+    inset: 0.25rem auto auto 0.25rem;
     position: absolute;
-    transform: translateX(0);
+    transform: translate(0, 0);
     transition: transform var(--duration-fast) var(--ease-bounce);
-    width: calc((100% - 0.5rem) / 2);
     z-index: 0;
-}
-
-.radio-block-group--sliding:has(> label:nth-of-type(2) input:checked) .radio-block-indicator {
-    transform: translateX(100%);
 }
 
 .radio-block-group--sliding .radio-block--sliding {
