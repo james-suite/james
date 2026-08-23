@@ -125,7 +125,7 @@
                 <option value="draft" @selected(request('status') === 'draft')>Rascunhos</option>
             </x-filter-bar.select>
 
-            <x-filter-bar.date name="date" value="{{ request('date') }}" title="Filtrar por data específica" />
+            <x-filter-bar.date name="date" value="{{ request('date') }}" title="Data específica" />
         </div>
     </x-filter-bar>
 
