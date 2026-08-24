@@ -208,7 +208,14 @@ class ReportsService
             return $t->tags->where('pivot.is_primary', true)->first() ?? $t->tags->first();
         };
 
-        $groupedByTag = $transactions->groupBy(fn ($t) => optional($getPrimaryTag($t))->name ?? 'Sem Categoria');
+        $groupedByTag = $transactions
+            ->groupBy(fn ($t) => optional($getPrimaryTag($t))->name ?? 'Sem Categoria')
+            ->sortByDesc(function (Collection $items): float {
+                $incomeSum = (float) $items->where('type', 'income')->sum('amount');
+                $expenseSum = (float) $items->where('type', 'expense')->sum('amount');
+
+                return abs($incomeSum - $expenseSum);
+            });
 
         $totalIncome = 0;
         $totalExpense = 0;
