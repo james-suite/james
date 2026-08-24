@@ -4,6 +4,7 @@ use App\Enums\TransactionStatus;
 use App\Models\FinancialAccount;
 use App\Models\FinancialCreditCard;
 use App\Models\FinancialCreditCardInvoice;
+use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Services\ReportsService;
 use Illuminate\Support\Carbon;
@@ -50,6 +51,91 @@ it('calculates net worth evolution correctly based on accrual accounting (compet
 
     $lastPoint = end($data);
     expect($lastPoint['value'])->toEqual(700);
+});
+
+it('orders sankey tags by descending net flow value', function () {
+    $account = FinancialAccount::factory()->create();
+    $lowerValueTag = FinancialTag::factory()->create(['name' => 'Categoria A']);
+    $higherValueTag = FinancialTag::factory()->create(['name' => 'Categoria B']);
+
+    $lowerValueTransaction = FinancialTransaction::factory()->posted()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'income',
+        'amount' => 251,
+        'date' => '2026-08-01',
+    ]);
+    $lowerValueTransaction->tags()->attach($lowerValueTag, ['is_primary' => true]);
+
+    $higherValueTransaction = FinancialTransaction::factory()->posted()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'income',
+        'amount' => 260,
+        'date' => '2026-08-02',
+    ]);
+    $higherValueTransaction->tags()->attach($higherValueTag, ['is_primary' => true]);
+
+    $data = (new ReportsService)->getAll(
+        Carbon::parse('2026-08-01'),
+        Carbon::parse('2026-08-31'),
+        [$account->id],
+    );
+
+    $nodeNames = collect($data['sankey']['nodes'])->pluck('name')->all();
+    $links = collect($data['sankey']['links'])
+        ->map(fn (array $link): array => [
+            'source' => $link['source'],
+            'target' => $link['target'],
+            'value' => $link['value'],
+        ])
+        ->all();
+
+    expect($nodeNames)->toBe(['Fluxo de Caixa', 'Categoria B', 'Categoria A', 'Saldo'])
+        ->and($links)->toBe([
+            ['source' => 'Categoria B', 'target' => 'Fluxo de Caixa', 'value' => 260.0],
+            ['source' => 'Categoria A', 'target' => 'Fluxo de Caixa', 'value' => 251.0],
+            ['source' => 'Fluxo de Caixa', 'target' => 'Saldo', 'value' => 511.0],
+        ]);
+});
+
+it('keeps equal and uncategorized sankey flows when ordering tags', function () {
+    $account = FinancialAccount::factory()->create();
+    $firstEqualTag = FinancialTag::factory()->create(['name' => 'Categoria A']);
+    $secondEqualTag = FinancialTag::factory()->create(['name' => 'Categoria B']);
+
+    $firstEqualTransaction = FinancialTransaction::factory()->posted()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'income',
+        'amount' => 260,
+        'date' => '2026-08-01',
+    ]);
+    $firstEqualTransaction->tags()->attach($firstEqualTag, ['is_primary' => true]);
+
+    FinancialTransaction::factory()->posted()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'income',
+        'amount' => 300,
+        'date' => '2026-08-02',
+    ]);
+
+    $secondEqualTransaction = FinancialTransaction::factory()->posted()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'income',
+        'amount' => 260,
+        'date' => '2026-08-03',
+    ]);
+    $secondEqualTransaction->tags()->attach($secondEqualTag, ['is_primary' => true]);
+
+    $data = (new ReportsService)->getAll(
+        Carbon::parse('2026-08-01'),
+        Carbon::parse('2026-08-31'),
+        [$account->id],
+    );
+
+    $nodeNames = collect($data['sankey']['nodes'])->pluck('name')->all();
+    $linkValues = collect($data['sankey']['links'])->pluck('value')->all();
+
+    expect($nodeNames)->toBe(['Fluxo de Caixa', 'Sem Categoria', 'Categoria A', 'Categoria B', 'Saldo'])
+        ->and($linkValues)->toBe([300.0, 260.0, 260.0, 820.0]);
 });
 
 it('excludes drafts from reports', function () {
