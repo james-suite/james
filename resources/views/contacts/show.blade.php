@@ -9,17 +9,17 @@
     <x-page-header title="Detalhes do Contato">
         <x-back-button fallback="{{ route('contacts.index') }}" />
 
-        <x-button color="outline" href="{{ route('contacts.edit', $contact) }}" class="bg-white">
-            <x-heroicon-o-pencil-square class="size-4" />
-            Editar
-        </x-button>
-
         <x-modal.delete
             action="{{ route('contacts.destroy', $contact) }}"
             item-name="o contato"
             item-desc="{{ $contact->name }}"
             title="Excluir Contato"
         />
+
+        <x-button color="outline" href="{{ route('contacts.edit', $contact) }}" class="bg-white flex-1 sm:flex-initial">
+            <x-heroicon-o-pencil-square class="size-4" />
+            <span class="whitespace-nowrap">Editar</span>
+        </x-button>
     </x-page-header>
 
     <x-card class="mb-4">

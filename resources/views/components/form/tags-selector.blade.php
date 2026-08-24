@@ -47,6 +47,7 @@
     },
 
     openModal() {
+        window.dispatchEvent(new CustomEvent('james-tooltip-show', { detail: { id: null } }));
         this.search = '';
         this.open = true;
         this.$nextTick(() => this.$refs.searchInput?.focus());
