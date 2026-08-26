@@ -78,7 +78,49 @@ it('returns correct toDatabase payload with level and details', function () {
         'action_label' => 'Acessar no Sistema',
         'level' => 'warning',
         'details' => ['Valor' => 'R$ 100,00'],
+        'items' => [],
     ]);
+});
+
+it('formats detailed items for database, telegram and mail', function () {
+    config(['services.telegram-bot-api.chat_id' => '999999']);
+
+    $items = [
+        [
+            'description' => 'Café especial',
+            'quantity' => '2',
+            'unit_price' => 'R$ 18,50',
+            'total' => 'R$ 37,00',
+        ],
+        [
+            'description' => 'Desconto da NFC-e',
+            'quantity' => '1',
+            'unit_price' => '-R$ 5,00',
+            'total' => '-R$ 5,00',
+        ],
+    ];
+    $notification = new GeneralNotification(
+        title: 'NFC-e importada com sucesso',
+        message: 'A transação está pronta para revisão.',
+        items: $items,
+    );
+    $user = new User(['name' => 'Arthur']);
+
+    expect($notification->toDatabase($user)['items'])->toBe($items);
+
+    $telegram = $notification->toTelegram($user)->toArray();
+    expect($telegram['text'])->toContain('*Itens:*')
+        ->and($telegram['text'])->toContain('• *Café especial*')
+        ->and($telegram['text'])->toContain('Qtd.: 2 | Unitário: R$ 18,50 | Total: R$ 37,00')
+        ->and($telegram['text'])->toContain('Qtd.: 1 | Unitário: -R$ 5,00 | Total: -R$ 5,00')
+        ->and($telegram['text'])->not->toContain('{"description"');
+
+    $mail = $notification->toMail($user);
+    expect($mail->introLines)->toContain('**Itens:**')
+        ->and($mail->introLines)->toContain('**Café especial**')
+        ->and($mail->introLines)->toContain('Qtd.: 2 | Unitário: R$ 18,50 | Total: R$ 37,00')
+        ->and($mail->introLines)->toContain('Qtd.: 1 | Unitário: -R$ 5,00 | Total: -R$ 5,00')
+        ->and($mail->introLines)->not->toContain('{"description"');
 });
 
 it('formats telegram message with clean bold title, prefix and details', function () {

@@ -20,6 +20,7 @@
             $actionLabel = $notification->data['action_label'] ?? 'Acessar no Sistema';
             $levelEnum = \App\Enums\NotificationLevel::tryFrom($notification->data['level'] ?? 'info') ?? \App\Enums\NotificationLevel::Info;
             $details = $notification->data['details'] ?? [];
+            $items = $notification->data['items'] ?? [];
         @endphp
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -102,6 +103,35 @@
                                     <span class="text-neutral-900 font-semibold">
                                         {{ is_array($val) ? json_encode($val, JSON_UNESCAPED_UNICODE) : $val }}
                                     </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </x-card>
+                @endif
+
+                @if(!empty($items))
+                    <x-card class="!p-0 overflow-hidden">
+                        <div class="px-5 py-3.5 border-b border-neutral-100 bg-neutral-50">
+                            <p class="text-xs font-bold text-neutral-700 uppercase tracking-wider">Itens Importados</p>
+                        </div>
+                        <div class="divide-y divide-neutral-100">
+                            @foreach($items as $item)
+                                <div class="px-5 py-4 space-y-3">
+                                    <p class="font-semibold text-neutral-900">{{ $item['description'] }}</p>
+                                    <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+                                        <div>
+                                            <dt class="text-xs font-medium text-neutral-500">Quantidade</dt>
+                                            <dd class="mt-1 font-semibold text-neutral-900">{{ $item['quantity'] }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-xs font-medium text-neutral-500">Valor unitário</dt>
+                                            <dd class="mt-1 font-semibold text-neutral-900">{{ $item['unit_price'] }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-xs font-medium text-neutral-500">Total</dt>
+                                            <dd class="mt-1 font-semibold text-neutral-900">{{ $item['total'] }}</dd>
+                                        </div>
+                                    </dl>
                                 </div>
                             @endforeach
                         </div>
