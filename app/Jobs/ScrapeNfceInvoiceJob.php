@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Enums\NotificationLevel;
 use App\Enums\TransactionStatus;
 use App\Models\FinancialTransaction;
+use App\Models\FinancialTransactionItem;
 use App\Models\User;
 use App\Notifications\GeneralNotification;
 use App\Services\Nfce\Data\NfceInvoiceData;
@@ -80,7 +81,7 @@ class ScrapeNfceInvoiceJob implements ShouldBeUnique, ShouldQueue
                     'nfce_source_url' => $source->requestUrl,
                 ]);
 
-                $transaction->items()->createMany($this->itemsFor($invoice));
+                $transaction->setRelation('items', $transaction->items()->createMany($this->itemsFor($invoice)));
 
                 return $transaction;
             });
@@ -178,8 +179,30 @@ class ScrapeNfceInvoiceJob implements ShouldBeUnique, ShouldQueue
                 'Valor' => formatCurrency((float) $transaction->amount),
                 'Emissão' => $invoice->issuedAt->format('d/m/Y H:i'),
             ],
-            channels: ['database', 'telegram'],
+            channels: ['database', 'telegram', 'mail'],
+            items: $this->notificationItems($transaction),
         ));
+    }
+
+    /**
+     * @return list<array{description: string, quantity: string, unit_price: string, total: string}>
+     */
+    private function notificationItems(FinancialTransaction $transaction): array
+    {
+        return $transaction->items
+            ->map(fn (FinancialTransactionItem $item): array => [
+                'description' => $item->description,
+                'quantity' => $this->formatQuantity($item->quantity),
+                'unit_price' => formatCurrency((float) $item->unit_price),
+                'total' => formatCurrency((float) $item->total),
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function formatQuantity(string $quantity): string
+    {
+        return rtrim(rtrim(number_format((float) $quantity, 3, ',', '.'), '0'), ',');
     }
 
     private function isNfceAccessKeyCollision(QueryException $exception): bool

@@ -45,11 +45,57 @@ test('it creates a draft transaction and notifies the requester after importing 
         ->and($transaction->items[6]->description)->toBe('Desconto da NFC-e')
         ->and($transaction->items[6]->total)->toBe('-16.29');
 
+    $expectedNotificationItems = [
+        [
+            'description' => 'ERVA MATE TRADICIONAL 1KG',
+            'quantity' => '2',
+            'unit_price' => formatCurrency(14.59),
+            'total' => formatCurrency(29.18),
+        ],
+        [
+            'description' => 'ARROZ PARBOILIZADO 1KG',
+            'quantity' => '1',
+            'unit_price' => formatCurrency(8.79),
+            'total' => formatCurrency(8.79),
+        ],
+        [
+            'description' => 'PAO FRANCES KG',
+            'quantity' => '0,416',
+            'unit_price' => formatCurrency(13.49),
+            'total' => formatCurrency(5.61),
+        ],
+        [
+            'description' => 'FILE MIGNON SUINO KG',
+            'quantity' => '3',
+            'unit_price' => formatCurrency(8.49),
+            'total' => formatCurrency(25.47),
+        ],
+        [
+            'description' => 'OVOS VERMELHOS DUZIA',
+            'quantity' => '2',
+            'unit_price' => formatCurrency(23.99),
+            'total' => formatCurrency(47.98),
+        ],
+        [
+            'description' => 'REFRIGERANTE 2L',
+            'quantity' => '5',
+            'unit_price' => formatCurrency(4.99),
+            'total' => formatCurrency(24.95),
+        ],
+        [
+            'description' => 'Desconto da NFC-e',
+            'quantity' => '1',
+            'unit_price' => formatCurrency(-16.29),
+            'total' => formatCurrency(-16.29),
+        ],
+    ];
+
     Http::assertSent(fn (Request $request): bool => $request->url() === jobNfceRequestUrl());
-    Notification::assertSentTo($requester, GeneralNotification::class, function (GeneralNotification $notification) use ($transaction): bool {
+    Notification::assertSentTo($requester, GeneralNotification::class, function (GeneralNotification $notification) use ($expectedNotificationItems, $transaction): bool {
         return $notification->title === 'NFC-e importada com sucesso'
             && $notification->actionUrl === route('financial.transactions.edit', $transaction)
-            && $notification->channels === ['database', 'telegram'];
+            && $notification->items === $expectedNotificationItems
+            && $notification->channels === ['database', 'telegram', 'mail'];
     });
 });
 

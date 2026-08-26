@@ -19,6 +19,7 @@ class GeneralNotification extends Notification implements ShouldQueue
     /**
      * @param  array<string, mixed>  $details  Dados adicionais chave-valor (ex: ['Valor' => 'R$ 150,00', 'Vencimento' => '20/08/2026'])
      * @param  array<int, string>  $channels  Canais de entrega desejados ('database', 'telegram', 'mail')
+     * @param  list<array{description: string, quantity: string, unit_price: string, total: string}>  $items  Itens detalhados relacionados à notificação
      */
     public function __construct(
         public readonly string $title,
@@ -28,6 +29,7 @@ class GeneralNotification extends Notification implements ShouldQueue
         public readonly array $details = [],
         public readonly array $channels = ['database', 'telegram', 'mail'],
         public readonly string $actionLabel = 'Acessar no Sistema',
+        public readonly array $items = [],
     ) {
         $this->level = is_string($level)
             ? (NotificationLevel::tryFrom($level) ?? NotificationLevel::Info)
@@ -70,7 +72,7 @@ class GeneralNotification extends Notification implements ShouldQueue
     /**
      * Payload persistido na tabela notifications.
      *
-     * @return array{title: string, message: string, action_url: string|null, action_label: string, level: string, details: array<string, mixed>}
+     * @return array{title: string, message: string, action_url: string|null, action_label: string, level: string, details: array<string, mixed>, items: list<array{description: string, quantity: string, unit_price: string, total: string}>}
      */
     public function toDatabase(object $notifiable): array
     {
@@ -81,6 +83,7 @@ class GeneralNotification extends Notification implements ShouldQueue
             'action_label' => $this->actionLabel,
             'level' => $this->level->value,
             'details' => $this->details,
+            'items' => $this->items,
         ];
     }
 
@@ -98,6 +101,15 @@ class GeneralNotification extends Notification implements ShouldQueue
             foreach ($this->details as $key => $value) {
                 $formattedValue = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string) $value;
                 $lines[] = "• *{$key}:* {$formattedValue}";
+            }
+        }
+
+        if (! empty($this->items)) {
+            $lines[] = '';
+            $lines[] = '*Itens:*';
+            foreach ($this->items as $item) {
+                $lines[] = "• *{$item['description']}*";
+                $lines[] = "  Qtd.: {$item['quantity']} | Unitário: {$item['unit_price']} | Total: {$item['total']}";
             }
         }
 
@@ -141,6 +153,16 @@ class GeneralNotification extends Notification implements ShouldQueue
             foreach ($this->details as $key => $value) {
                 $formattedValue = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string) $value;
                 $mail->line("**{$key}:** {$formattedValue}");
+            }
+            $mail->line('---');
+        }
+
+        if (! empty($this->items)) {
+            $mail->line('---');
+            $mail->line('**Itens:**');
+            foreach ($this->items as $item) {
+                $mail->line("**{$item['description']}**");
+                $mail->line("Qtd.: {$item['quantity']} | Unitário: {$item['unit_price']} | Total: {$item['total']}");
             }
             $mail->line('---');
         }
