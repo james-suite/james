@@ -33,6 +33,8 @@ class UpdateAppCommand extends Command
      */
     public function handle()
     {
+        $nonInteractive = (bool) $this->option('no-interaction');
+
         info('Iniciando processo de atualização do James...');
 
         // 0. Verificar dependências
@@ -50,7 +52,7 @@ class UpdateAppCommand extends Command
         } else {
             warning('O repositório local já está na versão mais recente.');
 
-            $force = confirm(
+            $force = $nonInteractive || confirm(
                 label: 'Deseja forçar o processo de atualização (build, otimizações, migrations) mesmo assim?',
                 default: false
             );
@@ -134,7 +136,7 @@ class UpdateAppCommand extends Command
             );
 
             // 8. Seeders (Opcional)
-            $runSeeders = confirm(
+            $runSeeders = ! $nonInteractive && confirm(
                 label: 'Deseja rodar as seeds padrão (usuário inicial e tags)? Recomendado no 1º deploy.',
                 default: false
             );
