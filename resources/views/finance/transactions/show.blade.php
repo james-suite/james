@@ -167,7 +167,7 @@
             class="mb-6"
             icon="heroicon-o-user-group"
             title="Gerada por Divisão de Conta"
-            description="Esta transação foi gerada a partir da divisão de conta '{{ $settlementGroup->description }}'."
+            :description="'Esta transação foi gerada a partir da divisão de conta \'' . $settlementGroup->description . '\'.'"
             :url="route('settlements.groups.show', $settlementGroup)"
             buttonText="Ver Divisão"
         />

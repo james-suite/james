@@ -7,7 +7,7 @@
         </x-breadcrumbs>
     </div>
 
-    <x-page-header title="{{ $settlementGroup->description }}">
+    <x-page-header :title="$settlementGroup->description">
             <x-back-button fallback="{{ route('settlements.groups.index') }}" />
 
             @if(!$settlementGroup->trashed())

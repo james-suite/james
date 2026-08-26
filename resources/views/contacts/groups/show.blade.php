@@ -7,7 +7,7 @@
         </x-breadcrumbs>
     </div>
 
-    <x-page-header title="{{ $group->name }}" icon="heroicon-o-tag">
+    <x-page-header :title="$group->name" icon="heroicon-o-tag">
         <x-modal.trigger name="delete-group-{{ $group->id }}">
             <x-button color="danger-outline" class="bg-white">
                 <x-heroicon-o-trash class="size-4" />
@@ -22,7 +22,7 @@
     </x-page-header>
 
     <!-- Delete Modal -->
-    <x-modal name="delete-group-{{ $group->id }}" title="Excluir Grupo" message="Tem certeza que deseja excluir o grupo '{{ $group->name }}'? Os contatos não serão excluídos." confirmVariant="danger">
+    <x-modal name="delete-group-{{ $group->id }}" title="Excluir Grupo" :message="'Tem certeza que deseja excluir o grupo \'' . $group->name . '\'? Os contatos não serão excluídos.'" confirmVariant="danger">
         <form action="{{ route('contacts.groups.destroy', $group) }}" method="POST" class="m-0">
             @csrf
             @method('DELETE')

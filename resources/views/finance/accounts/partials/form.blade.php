@@ -10,7 +10,7 @@
                 @endisset
                 
                 <div>
-                    <x-form-input name="name" label="Nome da Conta" value="{{ old('name', $account->name ?? '') }}" placeholder="Ex: Dinheiro Físico" />
+                    <x-form-input name="name" label="Nome da Conta" :value="old('name', $account->name ?? '')" placeholder="Ex: Dinheiro Físico" />
                 </div>
                 <div>
                     <x-form-select name="type" label="Tipo de Conta" x-model="type" @change="$dispatch('account-type-changed', type)">
@@ -25,7 +25,7 @@
                 
                 @if(!isset($account))
                 <div>
-                    <x-form-input label="Saldo Inicial (R$)" name="initial_balance" :currency="true" placeholder="0,00" value="{{ old('initial_balance') }}" help="Opcional. Se preenchido, criará uma transação na data de hoje ajustando o saldo inicial." />
+                    <x-form-input label="Saldo Inicial (R$)" name="initial_balance" :currency="true" placeholder="0,00" :value="old('initial_balance')" help="Opcional. Se preenchido, criará uma transação na data de hoje ajustando o saldo inicial." />
                 </div>
                 @endif
             </div>

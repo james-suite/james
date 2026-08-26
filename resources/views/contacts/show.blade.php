@@ -115,7 +115,7 @@
                 <p class="text-sm text-neutral-400 italic">Não pertence a nenhum grupo.</p>
             @endif
 
-            <x-modal name="sync-groups" title="Grupos de {{ $contact->name }}" confirmVariant="">
+            <x-modal name="sync-groups" :title="'Grupos de ' . $contact->name" confirmVariant="">
                 <form action="{{ route('contacts.groups.sync', $contact) }}" method="POST">
                     @csrf
                     <div class="space-y-2 mb-6 max-h-[400px] overflow-y-auto p-1">

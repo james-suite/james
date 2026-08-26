@@ -49,7 +49,7 @@
 
 <x-modal
     name="{{ $resolvedModalName }}"
-    title="{{ $title }}"
+    :title="$title"
     confirmVariant="success">
 
     <x-slot name="content">

@@ -6,7 +6,7 @@
         <!-- Dados Gerais -->
         <x-card>
             <div class="flex flex-col gap-4 sm:gap-6">
-                <x-form-input label="Descrição" name="description" value="{{ old('description', isset($settlementGroup) ? $settlementGroup->description : '') }}" placeholder="Descrição" autofocus />
+                <x-form-input label="Descrição" name="description" :value="old('description', isset($settlementGroup) ? $settlementGroup->description : '')" placeholder="Descrição" autofocus />
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
                     <div>
@@ -22,7 +22,7 @@
                         </div>
                     </div>
                     <div>
-                        <x-form-input label="Data" name="date" type="date" value="{{ old('date', isset($settlementGroup) ? $settlementGroup->date->format('Y-m-d') : \Carbon\Carbon::today()->format('Y-m-d')) }}" />
+                        <x-form-input label="Data" name="date" type="date" :value="old('date', isset($settlementGroup) ? $settlementGroup->date->format('Y-m-d') : \Carbon\Carbon::today()->format('Y-m-d'))" />
                     </div>
                 </div>
             </div>

@@ -15,7 +15,7 @@
         @csrf
         <x-card class="mb-4">
             <div class="mb-6">
-                <x-form-input name="name" label="Nome do Grupo" value="{{ old('name') }}" placeholder="Ex: Futebol, Família, Trabalho..." required />
+                <x-form-input name="name" label="Nome do Grupo" :value="old('name')" placeholder="Ex: Futebol, Família, Trabalho..." required />
             </div>
 
             <div class="mb-6">

@@ -7,7 +7,7 @@
         </x-breadcrumbs>
     </div>
 
-    <x-page-header title="{{ $settlement->description ?: 'Acerto' }}">
+    <x-page-header :title="$settlement->description ?: 'Acerto'">
             <x-back-button fallback="{{ route('settlements.history') }}" />
             @if(!$settlement->trashed())
                 @if(!$settlement->settlement_group_id)
