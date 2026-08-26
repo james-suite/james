@@ -8,10 +8,10 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
                     <div>
-                        <x-form-input label="Valor (R$)" name="amount" :currency="true" placeholder="0,00" value="{{ old('amount', isset($settlement) ? number_format(abs($settlement->amount), 2, '.', '') : '') }}" />
+                        <x-form-input label="Valor (R$)" name="amount" :currency="true" placeholder="0,00" :value="old('amount', isset($settlement) ? number_format(abs($settlement->amount), 2, '.', '') : '')" />
                     </div>
                     <div>
-                        <x-form-input label="Data" name="date" type="date" value="{{ old('date', isset($settlement) ? $settlement->date->format('Y-m-d') : \Carbon\Carbon::today()->format('Y-m-d')) }}" />
+                        <x-form-input label="Data" name="date" type="date" :value="old('date', isset($settlement) ? $settlement->date->format('Y-m-d') : \Carbon\Carbon::today()->format('Y-m-d'))" />
                     </div>
                 </div>
             </div>

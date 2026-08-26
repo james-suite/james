@@ -24,7 +24,7 @@
                 
                 <div class="flex-1 w-full flex flex-col gap-4">
                     <div>
-                        <x-form-input name="name" label="Nome" value="{{ old('name') }}" />
+                        <x-form-input name="name" label="Nome" :value="old('name')" />
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -36,7 +36,7 @@
                             />
                         </div>
                         <div>
-                            <x-form-input type="date" name="birthdate" label="Data de Nascimento" value="{{ old('birthdate') }}" />
+                            <x-form-input type="date" name="birthdate" label="Data de Nascimento" :value="old('birthdate')" />
                         </div>
                     </div>
                 </div>

@@ -6,7 +6,7 @@
         </x-breadcrumbs>
     </div>
 
-    <x-page-header title="Detalhes da Tag: {{ $financialTag->name }}">
+    <x-page-header :title="'Detalhes da Tag: ' . $financialTag->name">
         <x-back-button fallback="{{ route('financial.tags.index') }}" />
 
         @if(!$financialTag->is_protected)

@@ -15,7 +15,7 @@
         $remaining = max(0, $total - $invoice->amount_paid);
     @endphp
 
-    <x-page-header title="Fatura de {{ formatMonthYearFull($invoice->reference_month) }}">
+    <x-page-header :title="'Fatura de ' . formatMonthYearFull($invoice->reference_month)">
         <x-slot:subtitle>
             <div class="flex items-center gap-2 mt-2">
                 <x-badge :color="$status->color()">

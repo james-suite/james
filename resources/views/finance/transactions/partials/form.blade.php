@@ -5,7 +5,7 @@
         <!-- Main Data Card -->
         <x-card>
             <div class="flex flex-col gap-4 sm:gap-6">
-                <x-form-input label="Descrição" name="description" value="{{ old('description', $transaction->description ?? '') }}" placeholder="Descrição" autofocus />
+                <x-form-input label="Descrição" name="description" :value="old('description', $transaction->description ?? '')" placeholder="Descrição" autofocus />
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
                     <div>
@@ -15,13 +15,13 @@
                         </div>
                     </div>
                     <div>
-                        <x-form-input label="Data da Transação" name="date" type="date" value="{{ old('date', isset($transaction) ? $transaction->date->format('Y-m-d') : \Carbon\Carbon::today()->format('Y-m-d')) }}" x-model="date" />
+                        <x-form-input label="Data da Transação" name="date" type="date" :value="old('date', isset($transaction) ? $transaction->date->format('Y-m-d') : \Carbon\Carbon::today()->format('Y-m-d'))" x-model="date" />
                     </div>
                 </div>
 
                 @if(!isset($transaction))
                 <div x-show="mode === 'installment'" x-transition:enter="transition motion-ease-smooth-out motion-duration-slow" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition motion-ease-smooth-out motion-duration-medium" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" style="display: none;">
-                    <x-form-input label="Número de Parcelas" name="installments" type="number" min="2" value="{{ old('installments', 2) }}" />
+                    <x-form-input label="Número de Parcelas" name="installments" type="number" min="2" :value="old('installments', 2)" />
                 </div>
                 @endif
                 

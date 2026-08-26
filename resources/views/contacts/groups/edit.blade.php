@@ -8,7 +8,7 @@
         </x-breadcrumbs>
     </div>
 
-    <x-page-header title="Editar Grupo: {{ $group->name }}" mobileBottom>
+    <x-page-header :title="'Editar Grupo: ' . $group->name" mobileBottom>
         <x-form-actions fallback="{{ route('contacts.groups.index') }}" form="edit-group-form" />
     </x-page-header>
 
@@ -18,7 +18,7 @@
         
         <x-card class="mb-4">
             <div class="mb-6">
-                <x-form-input name="name" label="Nome do Grupo" value="{{ old('name', $group->name) }}" required />
+                <x-form-input name="name" label="Nome do Grupo" :value="old('name', $group->name)" required />
             </div>
 
             <div class="mb-6">

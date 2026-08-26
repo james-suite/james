@@ -1,5 +1,5 @@
 <x-layouts.app>
-    <x-page-header title="Detalhes do Log #{{ $activity->id }}">
+    <x-page-header :title="'Detalhes do Log #' . $activity->id">
         <x-back-button fallback="{{ route('audit.index') }}" />
     </x-page-header>
 

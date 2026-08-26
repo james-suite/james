@@ -78,7 +78,7 @@
 
             <!-- Nome da Tag -->
             <div>
-                <x-form-input name="name" label="Nome da Tag" value="{{ old('name', $tag->name ?? '') }}" required placeholder="Ex: Casa, Carro, Alimentação..." oninput="document.getElementById('preview-text').innerText = this.value || 'Nova Tag';" />
+                <x-form-input name="name" label="Nome da Tag" :value="old('name', $tag->name ?? '')" required placeholder="Ex: Casa, Carro, Alimentação..." oninput="document.getElementById('preview-text').innerText = this.value || 'Nova Tag';" />
             </div>
 
             <!-- Cores -->
