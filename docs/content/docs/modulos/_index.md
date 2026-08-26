@@ -35,5 +35,10 @@ Rastreabilidade completa e vitalícia de mutações em models de negócio (creat
 
 [Ver documentação →](./auditoria/)
 
-Para a lista completa de módulos planejados, consulte o [Roadmap](/james/docs/roadmap).
+### Veículos
+Módulo planejado para gestão de abastecimentos, despesas, manutenções, custos e lembretes dos veículos, inspirado no [Drivvo](https://www.drivvo.com/).
 
+### Saúde e Treinos
+Módulo planejado para acompanhar a saúde e a rotina de exercícios. A parte de treinos será inspirada no [openGym](https://opengym.duarte-santos.ch/), com foco em rotinas, exercícios, progressão e histórico de evolução.
+
+Para a lista completa de módulos planejados, consulte o [Roadmap](/james/docs/roadmap).
