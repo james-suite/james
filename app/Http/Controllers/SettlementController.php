@@ -20,6 +20,8 @@ use App\Traits\HandlesAttachments;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -197,6 +199,7 @@ class SettlementController extends Controller
     {
         $accounts = FinancialAccount::orderBy('name')->get();
         $cards = FinancialCreditCard::orderBy('name')->get();
+        $tags = $this->tagOptions();
 
         $settlement = null;
         $isSettling = $request->boolean('settle');
@@ -221,7 +224,7 @@ class SettlementController extends Controller
             }
         }
 
-        return view('settlements.create', compact('contact', 'accounts', 'cards', 'settlement', 'isSettling'));
+        return view('settlements.create', compact('contact', 'accounts', 'cards', 'tags', 'settlement', 'isSettling'));
     }
 
     /**
@@ -262,12 +265,17 @@ class SettlementController extends Controller
     {
         abort_if($settlement->settlement_group_id !== null, 403, 'Este acerto faz parte de um grupo e não pode ser editado individualmente.');
 
-        $settlement->load('media');
+        $settlement->load(['media', 'financialTransaction.tags']);
         $contact = $settlement->contact;
         $accounts = FinancialAccount::orderBy('name')->get();
         $cards = FinancialCreditCard::orderBy('name')->get();
+        $tags = $this->tagOptions();
+        $selectedTags = ($settlement->financialTransaction?->tags ?? collect())
+            ->reject(fn (FinancialTag $tag): bool => $tag->id === FinancialTag::REEMBOLSO_ID);
+        $defaultTags = $selectedTags->pluck('id')->all();
+        $defaultPrimaryTag = $selectedTags->firstWhere('pivot.is_primary', true)?->id;
 
-        return view('settlements.edit', compact('settlement', 'contact', 'accounts', 'cards'));
+        return view('settlements.edit', compact('settlement', 'contact', 'accounts', 'cards', 'tags', 'defaultTags', 'defaultPrimaryTag'));
     }
 
     /**
@@ -367,12 +375,53 @@ class SettlementController extends Controller
             $transaction = FinancialTransaction::create($data);
         }
 
-        // Sincroniza a tag "Reembolso" (is_primary = true)
-        $transaction->tags()->sync([
-            FinancialTag::REEMBOLSO_ID => ['is_primary' => true],
-        ]);
+        $this->syncTransactionTags($transaction, $validated);
 
         return $transaction;
+    }
+
+    /**
+     * @return Collection<int, array{id: int, name: string, color_hex: string|null, svg: string}>
+     */
+    private function tagOptions(): Collection
+    {
+        return FinancialTag::query()
+            ->where('id', '!=', FinancialTag::REEMBOLSO_ID)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (FinancialTag $tag): array => [
+                'id' => $tag->id,
+                'name' => $tag->name,
+                'color_hex' => $tag->color_hex,
+                'svg' => Blade::render('<x-dynamic-component :component="$icon" class="size-3.5" />', ['icon' => $tag->icon]),
+            ]);
+    }
+
+    /**
+     * Synchronize the automatic reimbursement tag with the user-selected payment tags.
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function syncTransactionTags(FinancialTransaction $transaction, array $validated): void
+    {
+        $tagSync = [
+            FinancialTag::REEMBOLSO_ID => ['is_primary' => true],
+        ];
+
+        if ($validated['type'] === SettlementType::IPaid->value && ! empty($validated['tags'])) {
+            $selectedTagIds = collect($validated['tags'])
+                ->map(fn ($tagId): int => (int) $tagId)
+                ->reject(fn (int $tagId): bool => $tagId === FinancialTag::REEMBOLSO_ID);
+            $primaryTagId = (int) ($validated['primary_tag_id'] ?? 0);
+
+            $tagSync[FinancialTag::REEMBOLSO_ID] = ['is_primary' => false];
+
+            foreach ($selectedTagIds as $tagId) {
+                $tagSync[$tagId] = ['is_primary' => $tagId === $primaryTagId];
+            }
+        }
+
+        $transaction->tags()->sync($tagSync);
     }
 
     public function trashed(): View

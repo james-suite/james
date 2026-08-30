@@ -2,6 +2,8 @@
 
 use App\Enums\SettlementType;
 use App\Models\Contact;
+use App\Models\FinancialAccount;
+use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\Settlement;
 use App\Models\User;
@@ -92,6 +94,221 @@ it('can update a settlement', function () {
         'id' => $settlement->id,
         'amount' => 200,
         'description' => 'Updated Test',
+    ]);
+});
+
+it('assigns selected tags to a payment made to a contact', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::REEMBOLSO_ID,
+        'name' => 'Reembolso',
+    ]);
+    $primaryTag = FinancialTag::factory()->create();
+    $secondaryTag = FinancialTag::factory()->create();
+    $contact = Contact::factory()->create();
+    $account = FinancialAccount::factory()->create();
+
+    $this->post(route('settlements.store', $contact), [
+        'type' => SettlementType::IPaid->value,
+        'amount' => 150,
+        'description' => 'Jantar',
+        'date' => '2026-08-30',
+        'create_transaction' => true,
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'tags' => [$primaryTag->id, $secondaryTag->id],
+        'primary_tag_id' => $primaryTag->id,
+    ])->assertRedirect(route('settlements.contact.show', $contact));
+
+    $transaction = Settlement::firstOrFail()->financialTransaction;
+
+    $this->assertDatabaseHas('financial_taggables', [
+        'financial_tag_id' => $primaryTag->id,
+        'financial_taggable_id' => $transaction->id,
+        'financial_taggable_type' => FinancialTransaction::class,
+        'is_primary' => true,
+    ]);
+    $this->assertDatabaseHas('financial_taggables', [
+        'financial_tag_id' => $secondaryTag->id,
+        'financial_taggable_id' => $transaction->id,
+        'financial_taggable_type' => FinancialTransaction::class,
+        'is_primary' => false,
+    ]);
+    $this->assertDatabaseHas('financial_taggables', [
+        'financial_tag_id' => FinancialTag::REEMBOLSO_ID,
+        'financial_taggable_id' => $transaction->id,
+        'financial_taggable_type' => FinancialTransaction::class,
+        'is_primary' => false,
+    ]);
+});
+
+it('replaces a payment made tag selection when updating a settlement', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::REEMBOLSO_ID,
+        'name' => 'Reembolso',
+    ]);
+    $oldTag = FinancialTag::factory()->create();
+    $newTag = FinancialTag::factory()->create();
+    $contact = Contact::factory()->create();
+    $account = FinancialAccount::factory()->create();
+
+    $this->post(route('settlements.store', $contact), [
+        'type' => SettlementType::IPaid->value,
+        'amount' => 150,
+        'description' => 'Jantar',
+        'date' => '2026-08-30',
+        'create_transaction' => true,
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'tags' => [$oldTag->id],
+        'primary_tag_id' => $oldTag->id,
+    ]);
+
+    $settlement = Settlement::firstOrFail();
+
+    $this->put(route('settlements.update', $settlement), [
+        'type' => SettlementType::IPaid->value,
+        'amount' => 175,
+        'description' => 'Jantar atualizado',
+        'date' => '2026-08-31',
+        'create_transaction' => true,
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'tags' => [$newTag->id],
+        'primary_tag_id' => $newTag->id,
+    ])->assertRedirect(route('settlements.contact.show', $contact));
+
+    $transaction = $settlement->refresh()->financialTransaction;
+
+    $this->assertDatabaseMissing('financial_taggables', [
+        'financial_tag_id' => $oldTag->id,
+        'financial_taggable_id' => $transaction->id,
+        'financial_taggable_type' => FinancialTransaction::class,
+    ]);
+    $this->assertDatabaseHas('financial_taggables', [
+        'financial_tag_id' => $newTag->id,
+        'financial_taggable_id' => $transaction->id,
+        'financial_taggable_type' => FinancialTransaction::class,
+        'is_primary' => true,
+    ]);
+    $this->assertDatabaseHas('financial_taggables', [
+        'financial_tag_id' => FinancialTag::REEMBOLSO_ID,
+        'financial_taggable_id' => $transaction->id,
+        'financial_taggable_type' => FinancialTransaction::class,
+        'is_primary' => false,
+    ]);
+});
+
+it('preselects custom payment tags when editing a settlement', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::REEMBOLSO_ID,
+        'name' => 'Reembolso',
+    ]);
+    $customTag = FinancialTag::factory()->create();
+    $contact = Contact::factory()->create();
+    $transaction = FinancialTransaction::factory()->create();
+    $transaction->tags()->attach([
+        FinancialTag::REEMBOLSO_ID => ['is_primary' => false],
+        $customTag->id => ['is_primary' => true],
+    ]);
+    $settlement = Settlement::create([
+        'contact_id' => $contact->id,
+        'financial_transaction_id' => $transaction->id,
+        'type' => SettlementType::IPaid->value,
+        'amount' => 150,
+        'description' => 'Jantar',
+        'date' => '2026-08-30',
+    ]);
+
+    $this->get(route('settlements.edit', $settlement))
+        ->assertSuccessful()
+        ->assertViewHas('defaultTags', fn (array $tags): bool => $tags === [$customTag->id])
+        ->assertViewHas('defaultPrimaryTag', $customTag->id);
+});
+
+it('keeps reimbursement as the primary tag when no payment tags are selected', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::REEMBOLSO_ID,
+        'name' => 'Reembolso',
+    ]);
+    $contact = Contact::factory()->create();
+    $account = FinancialAccount::factory()->create();
+
+    $this->post(route('settlements.store', $contact), [
+        'type' => SettlementType::IPaid->value,
+        'amount' => 150,
+        'description' => 'Jantar',
+        'date' => '2026-08-30',
+        'create_transaction' => true,
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+    ])->assertRedirect(route('settlements.contact.show', $contact));
+
+    $transaction = Settlement::firstOrFail()->financialTransaction;
+
+    $this->assertDatabaseHas('financial_taggables', [
+        'financial_tag_id' => FinancialTag::REEMBOLSO_ID,
+        'financial_taggable_id' => $transaction->id,
+        'financial_taggable_type' => FinancialTransaction::class,
+        'is_primary' => true,
+    ]);
+});
+
+it('rejects a payment tag that does not exist', function () {
+    $contact = Contact::factory()->create();
+    $account = FinancialAccount::factory()->create();
+
+    $this->from(route('settlements.create', $contact))
+        ->post(route('settlements.store', $contact), [
+            'type' => SettlementType::IPaid->value,
+            'amount' => 150,
+            'description' => 'Jantar',
+            'date' => '2026-08-30',
+            'create_transaction' => true,
+            'targetType' => 'account',
+            'financial_account_id' => $account->id,
+            'tags' => [999],
+            'primary_tag_id' => 999,
+        ])
+        ->assertRedirect(route('settlements.create', $contact))
+        ->assertSessionHasErrors(['tags.0', 'primary_tag_id']);
+
+    $this->assertDatabaseCount('settlements', 0);
+    $this->assertDatabaseCount('financial_transactions', 0);
+});
+
+it('does not assign custom tags to other settlement types', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::REEMBOLSO_ID,
+        'name' => 'Reembolso',
+    ]);
+    $customTag = FinancialTag::factory()->create();
+    $contact = Contact::factory()->create();
+    $account = FinancialAccount::factory()->create();
+
+    $this->post(route('settlements.store', $contact), [
+        'type' => SettlementType::TheyPaid->value,
+        'amount' => 150,
+        'description' => 'Reembolso recebido',
+        'date' => '2026-08-30',
+        'create_transaction' => true,
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'tags' => [$customTag->id],
+        'primary_tag_id' => $customTag->id,
+    ])->assertRedirect(route('settlements.contact.show', $contact));
+
+    $transaction = Settlement::firstOrFail()->financialTransaction;
+
+    $this->assertDatabaseMissing('financial_taggables', [
+        'financial_tag_id' => $customTag->id,
+        'financial_taggable_id' => $transaction->id,
+        'financial_taggable_type' => FinancialTransaction::class,
+    ]);
+    $this->assertDatabaseHas('financial_taggables', [
+        'financial_tag_id' => FinancialTag::REEMBOLSO_ID,
+        'financial_taggable_id' => $transaction->id,
+        'financial_taggable_type' => FinancialTransaction::class,
+        'is_primary' => true,
     ]);
 });
 

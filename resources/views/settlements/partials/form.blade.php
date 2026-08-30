@@ -75,6 +75,10 @@
                             </x-form-select>
                         </div>
                     </div>
+
+                    <div class="pt-2" x-show="type === 'i_paid'" x-transition>
+                        <x-tags-selector name="tags[]" :options="$tags" label="Tags (Opcional)" :value="old('tags', $defaultTags ?? [])" :primaryValue="old('primary_tag_id', $defaultPrimaryTag ?? null)" />
+                    </div>
                 </div>
             </div>
         </x-card>
