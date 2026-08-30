@@ -34,14 +34,15 @@
         removeItem(index) {
             this.items.splice(index, 1);
         },
+        parseNumber(value) {
+            let normalizedValue = value ? value.toString().replace(',', '.') : '0';
+            return parseFloat(normalizedValue) || 0;
+        },
+        itemTotal(item) {
+            return this.parseNumber(item.quantity) * this.parseNumber(item.unit_price);
+        },
         get itemsTotal() {
-            return this.items.reduce((total, item) => {
-                let qStr = item.quantity ? item.quantity.toString().replace(',', '.') : '0';
-                let q = parseFloat(qStr) || 0;
-                let val = item.unit_price ? item.unit_price.toString().replace(',', '.') : '0';
-                let p = parseFloat(val) || 0;
-                return total + (q * p);
-            }, 0);
+            return this.items.reduce((total, item) => total + this.itemTotal(item), 0);
         },
         formatMoney(value) {
             let options = { minimumFractionDigits: 2, maximumFractionDigits: 2 };

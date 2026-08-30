@@ -106,10 +106,12 @@ it('does not assign a primary tag to a transaction created with items', function
 
     $transaction = FinancialTransaction::query()->latest('id')->firstOrFail();
     $storedTransactionTag = $transaction->tags()->whereKey($transactionTag)->firstOrFail();
-    $storedItemTag = $transaction->items()->sole()->tags()->whereKey($itemTag)->firstOrFail();
+    $storedItem = $transaction->items()->sole();
+    $storedItemTag = $storedItem->tags()->whereKey($itemTag)->firstOrFail();
 
     expect((bool) $storedTransactionTag->pivot->is_primary)->toBeFalse()
-        ->and((bool) $storedItemTag->pivot->is_primary)->toBeTrue();
+        ->and((bool) $storedItemTag->pivot->is_primary)->toBeTrue()
+        ->and($storedItem->total)->toBe('30.00');
 });
 
 it('can view edit transaction page', function () {

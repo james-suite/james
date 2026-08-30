@@ -10,28 +10,30 @@
     
     <div class="flex flex-col gap-3">
         <!-- Table Header -->
-        <div class="hidden sm:flex gap-2 items-center text-xs font-bold text-neutral-400 uppercase tracking-widest px-1 mb-1" x-show="items.length > 0" style="display: none;">
-            <div class="flex-1">Descrição do Item</div>
-            <div class="w-24">Qtd</div>
-            <div class="w-32">Valor (R$)</div>
-            <div class="w-8"></div>
+        <div class="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_6rem_7rem_7rem_6.25rem] gap-2 items-center text-xs font-bold text-neutral-400 uppercase tracking-widest px-1 mb-1" x-show="items.length > 0" style="display: none;">
+            <div>Descrição do Item</div>
+            <div>Qtd</div>
+            <div>Valor (R$)</div>
+            <div class="text-right">Total</div>
+            <div></div>
         </div>
         
         <template x-for="(item, index) in items" :key="item._key">
-            <div class="flex flex-col sm:flex-row gap-2 sm:items-start py-2 sm:py-1 border-b border-neutral-100 sm:border-0 pb-3 sm:pb-1 mb-1 sm:mb-0 last:border-0">
+            <div class="flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_6rem_7rem_7rem_6.25rem] sm:px-1 sm:items-start py-2 sm:py-1 border-b border-neutral-100 sm:border-0 pb-3 sm:pb-1 mb-1 sm:mb-0 last:border-0">
                 <template x-if="item.id">
                     <input type="hidden" x-bind:name="'items['+index+'][id]'" x-bind:value="item.id" />
                 </template>
-                <div class="w-full sm:flex-1">
+                <div class="w-full sm:min-w-0">
                     <x-form-input x-model="item.description" ::name="'items['+index+'][description]'" placeholder="Descrição do item" />
                 </div>
-                <div class="flex gap-2 w-full sm:w-auto items-start">
+                <div class="flex gap-2 w-full items-start sm:contents">
                     <div class="w-24 shrink-0">
                         <x-form-input x-data @input="$event.target.value = $event.target.value.replace(/[^0-9.,]/g, '')" inputmode="decimal" x-model="item.quantity" ::name="'items['+index+'][quantity]'" placeholder="Qtd" />
                     </div>
                     <div class="flex-1 sm:w-28 shrink-0">
                         <x-form-input :currency="true" :allow-negative="true" x-model="item.unit_price" ::name="'items['+index+'][unit_price]'" placeholder="R$ 0,00" />
                     </div>
+                    <div class="hidden sm:flex sm:w-28 h-11 shrink-0 items-center justify-end text-sm font-semibold text-neutral-900 tabular-nums" x-text="'R$ ' + formatMoney(itemTotal(item))"></div>
                     <div class="flex items-center gap-1 shrink-0 px-1">
                     <x-tags-selector 
                         x-name="`items[${index}][tags][]`" 
@@ -55,7 +57,11 @@
                             <x-heroicon-o-trash class="size-5!" />
                         </x-button>
                     </x-tooltip>
+                    </div>
                 </div>
+                <p class="sm:hidden text-right text-sm font-semibold text-neutral-700 tabular-nums" aria-live="polite">
+                    Total: <span x-text="'R$ ' + formatMoney(itemTotal(item))"></span>
+                </p>
             </div>
         </template>
         <p class="text-sm text-neutral-400 italic mb-2" x-show="items.length === 0">Nenhum item adicionado nesta transação.</p>
