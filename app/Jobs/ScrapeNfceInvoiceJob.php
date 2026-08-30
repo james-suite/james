@@ -179,7 +179,7 @@ class ScrapeNfceInvoiceJob implements ShouldBeUnique, ShouldQueue
                 'Valor' => formatCurrency((float) $transaction->amount),
                 'Emissão' => $invoice->issuedAt->format('d/m/Y H:i'),
             ],
-            channels: ['database', 'telegram', 'mail'],
+            channels: ['database', 'telegram'],
             items: $this->notificationItems($transaction),
         ));
     }

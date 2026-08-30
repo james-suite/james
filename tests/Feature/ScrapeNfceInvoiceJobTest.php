@@ -95,7 +95,7 @@ test('it creates a draft transaction and notifies the requester after importing 
         return $notification->title === 'NFC-e importada com sucesso'
             && $notification->actionUrl === route('financial.transactions.edit', $transaction)
             && $notification->items === $expectedNotificationItems
-            && $notification->channels === ['database', 'telegram', 'mail'];
+            && $notification->channels === ['database', 'telegram'];
     });
 });
 
