@@ -19,6 +19,9 @@
             $actionUrl = $notification->data['action_url'] ?? null;
             $actionLabel = $notification->data['action_label'] ?? 'Acessar no Sistema';
             $levelEnum = \App\Enums\NotificationLevel::tryFrom($notification->data['level'] ?? 'info') ?? \App\Enums\NotificationLevel::Info;
+            $presentation = $notification->data['presentation'] ?? null;
+            $financialSummary = $notification->data['financial_summary'] ?? [];
+            $dueAlert = $notification->data['due_alert'] ?? [];
             $details = $notification->data['details'] ?? [];
             $items = $notification->data['items'] ?? [];
         @endphp
@@ -79,7 +82,7 @@
                         @endif
                     </div>
 
-                    @if($actionUrl)
+                    @if($actionUrl && !in_array($presentation, ['financial-summary', 'due-alert'], true))
                         <div class="pt-4 border-t border-neutral-100 flex items-center justify-between">
                             <span class="text-xs text-neutral-500">Ação recomendada:</span>
                             <x-button :href="$actionUrl">
@@ -90,8 +93,13 @@
                     @endif
                 </x-card>
 
-                <!-- Informações Estruturadas (Detalhes) -->
-                @if(!empty($details))
+                @if($presentation === 'financial-summary')
+                    <x-financial-summary-notification :summary="$financialSummary" :action-url="$actionUrl" />
+                @elseif($presentation === 'due-alert')
+                    <x-due-alert-notification :alert="$dueAlert" :action-url="$actionUrl" />
+                @else
+                    <!-- Informações Estruturadas (Detalhes) -->
+                    @if(!empty($details))
                     <x-card class="!p-0 overflow-hidden">
                         <div class="px-5 py-3.5 border-b border-neutral-100 bg-neutral-50">
                             <p class="text-xs font-bold text-neutral-700 uppercase tracking-wider">Informações Adicionais</p>
@@ -107,35 +115,36 @@
                             @endforeach
                         </div>
                     </x-card>
-                @endif
+                    @endif
 
-                @if(!empty($items))
-                    <x-card class="!p-0 overflow-hidden">
-                        <div class="px-5 py-3.5 border-b border-neutral-100 bg-neutral-50">
-                            <p class="text-xs font-bold text-neutral-700 uppercase tracking-wider">Itens Importados</p>
-                        </div>
-                        <div class="divide-y divide-neutral-100">
-                            @foreach($items as $item)
-                                <div class="px-5 py-4 space-y-3">
-                                    <p class="font-semibold text-neutral-900">{{ $item['description'] }}</p>
-                                    <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-                                        <div>
-                                            <dt class="text-xs font-medium text-neutral-500">Quantidade</dt>
-                                            <dd class="mt-1 font-semibold text-neutral-900">{{ $item['quantity'] }}</dd>
-                                        </div>
-                                        <div>
-                                            <dt class="text-xs font-medium text-neutral-500">Valor unitário</dt>
-                                            <dd class="mt-1 font-semibold text-neutral-900">{{ $item['unit_price'] }}</dd>
-                                        </div>
-                                        <div>
-                                            <dt class="text-xs font-medium text-neutral-500">Total</dt>
-                                            <dd class="mt-1 font-semibold text-neutral-900">{{ $item['total'] }}</dd>
-                                        </div>
-                                    </dl>
-                                </div>
-                            @endforeach
-                        </div>
-                    </x-card>
+                    @if(!empty($items))
+                        <x-card class="!p-0 overflow-hidden">
+                            <div class="px-5 py-3.5 border-b border-neutral-100 bg-neutral-50">
+                                <p class="text-xs font-bold text-neutral-700 uppercase tracking-wider">Itens Importados</p>
+                            </div>
+                            <div class="divide-y divide-neutral-100">
+                                @foreach($items as $item)
+                                    <div class="px-5 py-4 space-y-3">
+                                        <p class="font-semibold text-neutral-900">{{ $item['description'] }}</p>
+                                        <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+                                            <div>
+                                                <dt class="text-xs font-medium text-neutral-500">Quantidade</dt>
+                                                <dd class="mt-1 font-semibold text-neutral-900">{{ $item['quantity'] }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-xs font-medium text-neutral-500">Valor unitário</dt>
+                                                <dd class="mt-1 font-semibold text-neutral-900">{{ $item['unit_price'] }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-xs font-medium text-neutral-500">Total</dt>
+                                                <dd class="mt-1 font-semibold text-neutral-900">{{ $item['total'] }}</dd>
+                                            </div>
+                                        </dl>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </x-card>
+                    @endif
                 @endif
             </div>
         </div>

@@ -46,6 +46,29 @@
                         $message = $notification->data['message'] ?? '';
                         $actionUrl = $notification->data['action_url'] ?? null;
                         $levelEnum = \App\Enums\NotificationLevel::tryFrom($notification->data['level'] ?? 'info') ?? \App\Enums\NotificationLevel::Info;
+                        $presentation = $notification->data['presentation'] ?? null;
+                        $financialSummary = $notification->data['financial_summary'] ?? [];
+                        $dueAlert = $notification->data['due_alert'] ?? [];
+                        $notificationIcon = match ($presentation) {
+                            'financial-summary' => 'heroicon-o-chart-bar',
+                            'due-alert' => 'heroicon-o-calendar-days',
+                            default => $levelEnum->icon(),
+                        };
+                        $iconClasses = match ($presentation) {
+                            'financial-summary' => 'bg-brand-100 text-brand-600',
+                            'due-alert' => 'bg-yellow-50 text-yellow-800',
+                            default => match ($levelEnum->color()) {
+                                'green' => 'bg-green-50 text-green-700',
+                                'yellow' => 'bg-yellow-50 text-yellow-800',
+                                'red' => 'bg-red-50 text-red-700',
+                                default => 'bg-blue-50 text-blue-700',
+                            },
+                        };
+                        $preview = match ($presentation) {
+                            'financial-summary' => 'Receitas '.formatCurrency($financialSummary['income'] ?? 0).' · Despesas '.formatCurrency($financialSummary['expense'] ?? 0).' · Resultado '.formatCurrency($financialSummary['net'] ?? 0),
+                            'due-alert' => ($dueAlert['total_items'] ?? 0).' '.(($dueAlert['total_items'] ?? 0) === 1 ? 'item previsto' : 'itens previstos').' · Impacto '.formatCurrency($dueAlert['net'] ?? 0),
+                            default => $message,
+                        };
                     @endphp
                     <x-table.row href="{{ route('notifications.show', $notification) }}" class="grid-cols-[140px_1fr_200px] hidden sm:grid items-center {{ $isUnread ? 'bg-blue-50/40' : '' }}">
                         <x-table.cell>
@@ -56,14 +79,17 @@
                             @endif
                         </x-table.cell>
                         <x-table.cell>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-3">
+                                <div class="flex size-9 shrink-0 items-center justify-center rounded-lg {{ $iconClasses }}">
+                                    <x-dynamic-component :component="$notificationIcon" class="size-5" />
+                                </div>
                                 <div class="min-w-0">
                                     <div class="text-sm font-medium {{ $isUnread ? 'text-neutral-900 font-semibold' : 'text-neutral-700' }} truncate">
                                         {{ $title }}
                                     </div>
-                                    @if($message)
+                                    @if($preview)
                                         <div class="text-xs text-neutral-500 truncate mt-0.5">
-                                            {{ $message }}
+                                            {{ $preview }}
                                         </div>
                                     @endif
                                 </div>
@@ -77,23 +103,28 @@
                         </x-table.cell>
 
                         <x-slot:mobile>
-                            <div class="flex justify-between items-start">
-                                <div class="flex flex-col gap-1.5 min-w-0 pr-2">
-                                    <div class="flex items-center gap-2">
-                                        @if($isUnread)
-                                            <x-badge :color="$levelEnum->color()" size="sm">{{ $levelEnum->label() }}</x-badge>
-                                        @else
-                                            <x-badge color="neutral" size="sm">Lida</x-badge>
-                                        @endif
-                                        <span class="text-sm font-medium {{ $isUnread ? 'text-neutral-900 font-semibold' : 'text-neutral-700' }} truncate">
-                                            {{ $title }}
-                                        </span>
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <div class="flex size-9 shrink-0 items-center justify-center rounded-lg {{ $iconClasses }}">
+                                        <x-dynamic-component :component="$notificationIcon" class="size-5" />
                                     </div>
-                                    @if($message)
-                                        <div class="text-xs text-neutral-500 line-clamp-2">
-                                            {{ $message }}
+                                    <div class="flex min-w-0 flex-col gap-1.5">
+                                        <div class="flex items-center gap-2">
+                                            @if($isUnread)
+                                                <x-badge :color="$levelEnum->color()" size="sm">{{ $levelEnum->label() }}</x-badge>
+                                            @else
+                                                <x-badge color="neutral" size="sm">Lida</x-badge>
+                                            @endif
+                                            <span class="text-sm font-medium {{ $isUnread ? 'text-neutral-900 font-semibold' : 'text-neutral-700' }} truncate">
+                                                {{ $title }}
+                                            </span>
                                         </div>
-                                    @endif
+                                        @if($preview)
+                                            <div class="text-xs text-neutral-500 line-clamp-2">
+                                                {{ $preview }}
+                                            </div>
+                                        @endif
+                                    </div>
                                 </div>
                                 <div class="text-right text-xs text-neutral-500 shrink-0">
                                     {{ formatDateTime($notification->created_at) }}
@@ -118,4 +149,3 @@
         @endif
     </div>
 </x-layouts.app>
-
