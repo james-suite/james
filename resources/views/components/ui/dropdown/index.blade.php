@@ -97,7 +97,11 @@
         x-show="open || closing"
         x-cloak
         data-origin="{{ $dropdownOrigin }}"
-        :class="{ 'is-open': open && rendered, 'is-closing': closing }"
+        :class="{
+            'is-opening': open && !rendered,
+            'is-open': open && rendered,
+            'is-closing': closing,
+        }"
         @class([
         't-dropdown absolute z-50 rounded-lg border bg-white p-1 shadow-lg',
         $dropdownPosition,

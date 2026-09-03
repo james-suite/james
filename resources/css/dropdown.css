@@ -10,13 +10,13 @@
 
 .t-dropdown {
     transform-origin: top left;
-    transform: scale(var(--dropdown-pre-scale));
+    transform: none;
     opacity: 0;
     pointer-events: none;
     transition:
         transform var(--dropdown-open-dur) var(--dropdown-ease),
         opacity var(--dropdown-open-dur) var(--dropdown-ease);
-    will-change: transform, opacity;
+    will-change: opacity;
 }
 
 .t-dropdown[data-origin="top-right"] {
@@ -39,16 +39,24 @@
     transform-origin: bottom right;
 }
 
+.t-dropdown.is-opening {
+    transform: scale(var(--dropdown-pre-scale));
+    transition: none;
+    will-change: transform, opacity;
+}
+
 .t-dropdown.is-open {
-    transform: scale(1);
+    transform: none;
     opacity: 1;
     pointer-events: auto;
+    will-change: auto;
 }
 
 .t-dropdown.is-closing {
     transform: scale(var(--dropdown-closing-scale));
     opacity: 0;
     pointer-events: none;
+    will-change: transform, opacity;
     transition:
         transform var(--dropdown-close-dur) var(--dropdown-ease),
         opacity var(--dropdown-close-dur) var(--dropdown-ease);
