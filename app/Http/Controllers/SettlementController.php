@@ -78,12 +78,12 @@ class SettlementController extends Controller
             ")
             ->get()
             ->map(function ($contact) {
-                $toReceive = max(0, ($contact->they_owe ?? 0) - ($contact->they_paid ?? 0));
-                $toPay = max(0, ($contact->i_owe ?? 0) - ($contact->i_paid ?? 0));
+                $toReceive = max(0, round(($contact->they_owe ?? 0) - ($contact->they_paid ?? 0), 2));
+                $toPay = max(0, round(($contact->i_owe ?? 0) - ($contact->i_paid ?? 0), 2));
 
                 $contact->to_receive = $toReceive;
                 $contact->to_pay = $toPay;
-                $contact->net_balance = $toReceive - $toPay;
+                $contact->net_balance = round($toReceive - $toPay, 2);
                 $contact->avatar_url = $contact->avatar;
                 // Add group_ids for filtering in Alpine
                 $contact->group_ids = $contact->groups->pluck('id')->toArray();
@@ -92,9 +92,9 @@ class SettlementController extends Controller
             })
             ->values();
 
-        $toReceive = (float) $contacts->sum(fn ($c) => max(0, $c->net_balance));
-        $toPay = (float) $contacts->sum(fn ($c) => max(0, -$c->net_balance));
-        $netBalance = $toReceive - $toPay;
+        $toReceive = round((float) $contacts->sum(fn ($c) => max(0, $c->net_balance)), 2);
+        $toPay = round((float) $contacts->sum(fn ($c) => max(0, -$c->net_balance)), 2);
+        $netBalance = round($toReceive - $toPay, 2);
 
         $groups = ContactGroup::orderBy('name')->get();
 
@@ -139,13 +139,13 @@ class SettlementController extends Controller
         // Compute balances for this contact using the max(0, debt - payment) rule
         $debtTheyOweMe = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::TheyOwe->value)->sum('amount');
         $paymentsTheyMade = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::TheyPaid->value)->sum('amount');
-        $toReceive = max(0, $debtTheyOweMe - $paymentsTheyMade);
+        $toReceive = max(0, round($debtTheyOweMe - $paymentsTheyMade, 2));
 
         $debtIOweThem = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::IOwe->value)->sum('amount');
         $paymentsIMade = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::IPaid->value)->sum('amount');
-        $toPay = max(0, $debtIOweThem - $paymentsIMade);
+        $toPay = max(0, round($debtIOweThem - $paymentsIMade, 2));
 
-        $netBalance = $toReceive - $toPay;
+        $netBalance = round($toReceive - $toPay, 2);
 
         // Get settlements history for this contact (paginated)
         $settlements = Settlement::where('contact_id', $contact->id)
@@ -207,13 +207,13 @@ class SettlementController extends Controller
         if ($isSettling) {
             $debtTheyOweMe = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::TheyOwe->value)->sum('amount');
             $paymentsTheyMade = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::TheyPaid->value)->sum('amount');
-            $toReceive = max(0, $debtTheyOweMe - $paymentsTheyMade);
+            $toReceive = max(0, round($debtTheyOweMe - $paymentsTheyMade, 2));
 
             $debtIOweThem = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::IOwe->value)->sum('amount');
             $paymentsIMade = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::IPaid->value)->sum('amount');
-            $toPay = max(0, $debtIOweThem - $paymentsIMade);
+            $toPay = max(0, round($debtIOweThem - $paymentsIMade, 2));
 
-            $netBalance = $toReceive - $toPay;
+            $netBalance = round($toReceive - $toPay, 2);
 
             if (abs($netBalance) > 0) {
                 $settlement = new Settlement;

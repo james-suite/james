@@ -23,13 +23,13 @@ class BalanceCard extends Component
 
         $debtTheyOweMe = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::TheyOwe->value)->sum('amount');
         $paymentsTheyMade = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::TheyPaid->value)->sum('amount');
-        $toReceive = max(0, $debtTheyOweMe - $paymentsTheyMade);
+        $toReceive = max(0, round($debtTheyOweMe - $paymentsTheyMade, 2));
 
         $debtIOweThem = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::IOwe->value)->sum('amount');
         $paymentsIMade = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::IPaid->value)->sum('amount');
-        $toPay = max(0, $debtIOweThem - $paymentsIMade);
+        $toPay = max(0, round($debtIOweThem - $paymentsIMade, 2));
 
-        $this->netBalance = $toReceive - $toPay;
+        $this->netBalance = round($toReceive - $toPay, 2);
     }
 
     /**
