@@ -30,6 +30,20 @@ it('can view contact settlement ledger', function () {
     $this->get(route('settlements.contact.show', $contact))->assertSuccessful();
 });
 
+it('treats a settled contact balance as zero despite floating-point precision', function () {
+    $contact = Contact::factory()->create();
+
+    Settlement::create(['contact_id' => $contact->id, 'type' => SettlementType::TheyOwe->value, 'amount' => 650, 'description' => 'Empréstimos', 'date' => '2026-09-04']);
+    Settlement::create(['contact_id' => $contact->id, 'type' => SettlementType::IOwe->value, 'amount' => 14.86, 'description' => 'Janta', 'date' => '2026-09-04']);
+    Settlement::create(['contact_id' => $contact->id, 'type' => SettlementType::TheyPaid->value, 'amount' => 635.14, 'description' => 'Quitação de saldo', 'date' => '2026-09-04']);
+
+    $response = $this->get(route('settlements.contact.show', $contact));
+
+    $response->assertSuccessful()
+        ->assertViewHas('netBalance', 0.0)
+        ->assertViewHas('settleUrl', null);
+});
+
 it('can view settlement details', function () {
     $contact = Contact::factory()->create();
     $settlement = Settlement::create([
