@@ -163,7 +163,7 @@
                     </div>
 
                     <!-- Tags Grid -->
-                    <div class="p-6 overflow-y-auto flex-1 bg-white">
+                    <div class="min-h-0 flex-1 overflow-y-auto scroll-fade-y bg-white p-6">
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                             <template x-for="tag in filteredOptions" :key="tag.id">
                                 <button type="button"
