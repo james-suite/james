@@ -9,7 +9,7 @@
         <x-module-nav-link :href="route('financial.recurrences.index')" :current="request()->routeIs('financial.recurrences.*')">
             Recorrências
         </x-module-nav-link>
-        <x-module-nav-link :href="route('financial.reports')" :current="request()->routeIs('financial.reports.*', 'financial.reports')" class="hidden! lg:inline-flex!">
+        <x-module-nav-link :href="route('financial.reports')" :current="request()->routeIs('financial.reports.*', 'financial.reports')">
             Relatórios
         </x-module-nav-link>
 

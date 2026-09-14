@@ -19,9 +19,9 @@
 
 <div {{ $attributes->class('-mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8 mb-6 border-b border-neutral-300 bg-neutral-100 -mt-3 sm:-mt-6 lg:-mt-8') }}>
     <nav @class([
-        'flex items-center gap-0.5 py-3',
-        'overflow-x-auto overflow-y-hidden' => $scrollable,
-    ])>
+        'flex min-w-0 items-center gap-0.5 py-3',
+        'scroll-fade-x touch-pan-x overscroll-x-contain overflow-x-auto overflow-y-hidden scroll-smooth' => $scrollable,
+    ]) x-init="$nextTick(() => $el.querySelector('[aria-current=page]')?.scrollIntoView({ block: 'nearest', inline: 'center' }))">
         {{ $slot }}
     </nav>
 </div>

@@ -105,6 +105,26 @@
             --scroll-fade-b: 0px;
         }
     }
+
+    @keyframes scroll-fade-reveal-l {
+        from {
+            --scroll-fade-l: 0px;
+        }
+
+        to {
+            --scroll-fade-l: var(--_scroll-fade-size-l, var(--scroll-fade-size, min(12%, calc(var(--spacing) * 10))));
+        }
+    }
+
+    @keyframes scroll-fade-reveal-r {
+        from {
+            --scroll-fade-r: var(--_scroll-fade-size-r, var(--scroll-fade-size, min(12%, calc(var(--spacing) * 10))));
+        }
+
+        to {
+            --scroll-fade-r: 0px;
+        }
+    }
 }
 
 @property --scroll-fade-t {
@@ -114,6 +134,18 @@
 }
 
 @property --scroll-fade-b {
+    syntax: "<length-percentage>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+@property --scroll-fade-l {
+    syntax: "<length-percentage>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+@property --scroll-fade-r {
     syntax: "<length-percentage>";
     inherits: false;
     initial-value: 0px;
@@ -155,6 +187,45 @@
     @supports not (animation-timeline: scroll()) {
         --scroll-fade-t: var(--_scroll-fade-size-t);
         --scroll-fade-b: var(--_scroll-fade-size-b);
+    }
+}
+
+@utility scroll-fade-x {
+    --_scroll-fade-size-l: var(--scroll-fade-l-size, var(--scroll-fade-size, min(12%, calc(var(--spacing) * 10))));
+    --_scroll-fade-size-r: var(--scroll-fade-r-size, var(--scroll-fade-size, min(12%, calc(var(--spacing) * 10))));
+    --scroll-fade-inline: linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--scroll-fade-l, 0px),
+        #000 calc(100% - var(--scroll-fade-r, 0px)),
+        transparent 100%
+    );
+    -webkit-mask-image: var(--scroll-fade-mask, var(--scroll-fade-inline));
+    mask-image: var(--scroll-fade-mask, var(--scroll-fade-inline));
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    @supports (animation-timeline: scroll()) {
+        animation:
+            scroll-fade-reveal-l 1ms ease-in-out,
+            scroll-fade-reveal-r 1ms ease-in-out;
+        animation-timeline: scroll(self x), scroll(self x);
+        animation-range:
+            0 var(--scroll-fade-reveal, calc(var(--spacing) * 24)),
+            calc(100% - var(--scroll-fade-reveal, calc(var(--spacing) * 24))) 100%;
+        animation-fill-mode: both;
+    }
+
+    @supports not (animation-timeline: scroll()) {
+        --scroll-fade-l: var(--_scroll-fade-size-l);
+        --scroll-fade-r: var(--_scroll-fade-size-r);
     }
 }
 
