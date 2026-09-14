@@ -71,8 +71,8 @@
     @endif>
 
     @if ($currency)
-        <input type="hidden" @if ($name) id="{{ $name }}" name="{{ $name }}" @endif {{ $attributes->filter(fn($v, $k) => in_array($k, [':name', '::name', 'x-bind:name'])) }} x-model="rawValue">
-        <input type="text" inputmode="numeric" x-ref="display" @input="updateValue($event)" placeholder="{{ $placeholder }}" {{ $attributes->whereDoesntStartWith('x-model')->filter(fn($v, $k) => !in_array($k, [':name', '::name', 'x-bind:name']))->merge(['class' => $classes]) }} />
+        <input type="hidden" @if ($name) name="{{ $name }}" @endif {{ $attributes->filter(fn($v, $k) => in_array($k, [':name', '::name', 'x-bind:name'])) }} x-model="rawValue">
+        <input type="text" @if ($name) id="{{ $name }}_display" @endif inputmode="numeric" x-ref="display" @input="updateValue($event)" placeholder="{{ $placeholder }}" {{ $attributes->whereDoesntStartWith('x-model')->filter(fn($v, $k) => !in_array($k, [':name', '::name', 'x-bind:name']))->merge(['class' => $classes]) }} />
     @else
         <input
             @if ($viewable) :type="show ? 'text' : 'password'"

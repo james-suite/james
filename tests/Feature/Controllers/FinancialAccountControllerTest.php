@@ -68,6 +68,15 @@ it('can view create account page', function () {
         ->assertViewIs('finance.accounts.create');
 });
 
+it('renders accessible help and labels for currency fields', function () {
+    $this->get(route('financial.accounts.create'))
+        ->assertSuccessful()
+        ->assertSee('for=initial_balance_display', false)
+        ->assertSee('id="initial_balance_display"', false)
+        ->assertSee('id="initial_balance-help"', false)
+        ->assertSee('Opcional. Se preenchido', false);
+});
+
 it('can store account', function () {
     FinancialTag::factory()->create([
         'id' => FinancialTag::SALDO_INICIAL_ID,
