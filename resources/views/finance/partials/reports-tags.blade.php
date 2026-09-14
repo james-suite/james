@@ -7,7 +7,7 @@
         </h4>
         <div class="space-y-6">
             @forelse($expenses as $index => $item)
-                <x-finance.tag-list-item :index="$index + 1" :item="$item" type="expense" :showBar="true" />
+                <x-finance.tag-list-item :index="$index + 1" :item="$item" type="expense" :showBar="true" filterable />
             @empty
                 <div class="text-sm text-neutral-500 py-4">Nenhuma despesa no período.</div>
             @endforelse
@@ -22,7 +22,7 @@
         </h4>
         <div class="space-y-6">
             @forelse($incomes as $index => $item)
-                <x-finance.tag-list-item :index="$index + 1" :item="$item" type="income" :showBar="true" />
+                <x-finance.tag-list-item :index="$index + 1" :item="$item" type="income" :showBar="true" filterable />
             @empty
                 <div class="text-sm text-neutral-500 py-4">Nenhuma receita no período.</div>
             @endforelse

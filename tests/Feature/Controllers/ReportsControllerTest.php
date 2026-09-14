@@ -13,6 +13,8 @@ it('can view reports page', function () {
     $this->get(route('financial.reports'))
         ->assertSuccessful()
         ->assertViewIs('finance.reports')
+        ->assertSee('type="button"', false)
+        ->assertSee('filterByTag(', false)
         ->assertSee('Sem movimentações para exibir', false)
         ->assertSee('Sem fluxo para os filtros escolhidos', false);
 });

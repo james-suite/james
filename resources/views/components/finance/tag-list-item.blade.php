@@ -3,6 +3,7 @@
     'item',
     'type' => 'expense', // 'expense', 'income', 'net'
     'showBar' => true,
+    'filterable' => false,
 ])
 
 @php
@@ -27,9 +28,18 @@
     $color = $item['color'] ?? '#9ca3af';
     $icon = $item['icon'] ?? 'heroicon-o-tag';
     $name = $item['name'] ?? 'Sem Categoria';
+    $wrapperClasses = 'flex items-start gap-3 p-2 -mx-2 rounded-lg transition-colors';
+
+    if ($filterable) {
+        $wrapperClasses .= ' w-full cursor-pointer text-left hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40';
+    }
 @endphp
 
-<div class="flex items-start gap-3 cursor-pointer hover:bg-neutral-50 p-2 -mx-2 rounded-lg transition-colors" @click="filterByTag({{ $item['id'] ?? 0 }})">
+@if($filterable)
+    <button type="button" class="{{ $wrapperClasses }}" @click="filterByTag({{ $item['id'] ?? 0 }})">
+@else
+    <div class="{{ $wrapperClasses }}">
+@endif
     <div class="shrink-0 w-6 h-6 rounded flex items-center justify-center text-xs font-bold" 
          style="background-color: {{ $color }}20; color: {{ $color }}">
         {{ $index }}
@@ -53,4 +63,8 @@
             </div>
         @endif
     </div>
-</div>
+@if($filterable)
+    </button>
+@else
+    </div>
+@endif
