@@ -1,4 +1,14 @@
 <x-layouts.financial>
+    @php
+        $hasReportTagFilter = $selectedTagId !== null;
+        $clearTagUrl = route('financial.reports', array_filter([
+            'period' => $period,
+            'account' => $accountId,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+        ], fn ($value): bool => $value !== null && $value !== ''));
+    @endphp
+
     <x-page-header title="Relatórios Financeiros" icon="heroicon-o-chart-pie"></x-page-header>
 
     <div class="space-y-4 pb-6 lg:hidden">
@@ -90,7 +100,13 @@
                 <h2 id="mobile-report-transactions" class="text-lg font-bold text-neutral-900">Lançamentos recentes</h2>
                 <p class="mt-1 text-sm text-neutral-500">Os cinco últimos lançamentos do período selecionado.</p>
             </div>
-            <x-finance.transaction-table :transactions="$transactions->getCollection()->take(5)" />
+            <x-finance.transaction-table
+                :transactions="$transactions->getCollection()->take(5)"
+                :empty-title="$hasReportTagFilter ? 'Nenhuma transação corresponde a esta tag' : 'Nenhuma transação encontrada'"
+                :empty-description="$hasReportTagFilter ? 'Remova o filtro de tag para voltar a ver todos os lançamentos do período.' : 'Não há transações disponíveis no momento.'"
+                :empty-action-text="$hasReportTagFilter ? 'Remover filtro' : null"
+                :empty-action-route="$hasReportTagFilter ? $clearTagUrl : null"
+            />
         </section>
     </div>
 
@@ -174,9 +190,17 @@
         <!-- Sankey Chart -->
         <x-card class="hidden lg:block mb-6">
             <h3 class="text-lg font-bold text-neutral-900 mb-4">Fluxo de Caixa</h3>
-            <div class="relative w-full h-[400px]">
-                <div class="w-full h-full" x-ref="chartSankey"></div>
-            </div>
+            @if(count($sankey['links'] ?? []) > 0)
+                <div class="relative w-full h-[400px]" role="img" aria-label="Diagrama do fluxo de caixa">
+                    <div class="w-full h-full" x-ref="chartSankey"></div>
+                </div>
+            @else
+                <div class="flex h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-neutral-50/60 px-4 text-center" role="status">
+                    <x-heroicon-o-arrows-right-left class="mb-2 size-10 text-neutral-300" />
+                    <p class="text-sm font-medium text-neutral-600">Sem fluxo para os filtros escolhidos</p>
+                    <p class="mt-1 text-xs text-neutral-500">Ajuste o período, a conta ou a tag para visualizar o diagrama.</p>
+                </div>
+            @endif
         </x-card>
 
         <!-- Evolution Chart -->
@@ -282,7 +306,7 @@
             },
 
             async initCharts() {
-                if (!this.$root.offsetParent) {
+                if (!this.$root.offsetParent || !this.$refs.chartSankey) {
                     return;
                 }
 

@@ -132,7 +132,26 @@
         </div>
     </x-filter-bar>
 
-    <x-finance.transaction-table :transactions="$transactions" class="lg:mb-8" />
+    @php
+        $hasTransactionFilters = request()->hasAny([
+            'search',
+            'account_id',
+            'tag_id',
+            'type',
+            'status',
+            'date_start',
+            'date_end',
+        ]);
+    @endphp
+
+    <x-finance.transaction-table
+        :transactions="$transactions"
+        :empty-title="$hasTransactionFilters ? 'Nenhuma transação corresponde aos filtros' : 'Nenhuma transação encontrada'"
+        :empty-description="$hasTransactionFilters ? 'Tente remover ou ajustar algum filtro para ver mais resultados.' : 'Não há transações disponíveis no momento.'"
+        :empty-action-text="$hasTransactionFilters ? 'Limpar filtros' : null"
+        :empty-action-route="$hasTransactionFilters ? route('financial.transactions.index') : null"
+        class="lg:mb-8"
+    />
     
     <div class="mt-6 pb-6">
         {{ $transactions->links() }}

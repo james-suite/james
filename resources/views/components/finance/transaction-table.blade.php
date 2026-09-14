@@ -1,4 +1,11 @@
-@props(['transactions', 'hidePendingBadge' => false])
+@props([
+    'transactions',
+    'hidePendingBadge' => false,
+    'emptyTitle' => 'Nenhuma transação encontrada',
+    'emptyDescription' => 'Não há transações disponíveis no momento.',
+    'emptyActionText' => null,
+    'emptyActionRoute' => null,
+])
 
 <x-table {{ $attributes }}>
     @if($transactions->isNotEmpty())
@@ -171,8 +178,10 @@
         @empty
             <x-empty-state 
                 icon="heroicon-o-banknotes" 
-                title="Nenhuma transação encontrada" 
-                description="Não há transações disponíveis no momento."
+                :title="$emptyTitle"
+                :description="$emptyDescription"
+                :action-text="$emptyActionText"
+                :action-route="$emptyActionRoute"
             />
         @endforelse
     </x-table.body>

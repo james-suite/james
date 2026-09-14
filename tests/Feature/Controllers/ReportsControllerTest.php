@@ -12,7 +12,9 @@ beforeEach(function () {
 it('can view reports page', function () {
     $this->get(route('financial.reports'))
         ->assertSuccessful()
-        ->assertViewIs('finance.reports');
+        ->assertViewIs('finance.reports')
+        ->assertSee('Sem movimentações para exibir', false)
+        ->assertSee('Sem fluxo para os filtros escolhidos', false);
 });
 
 it('defaults to all_time period when no period is specified', function () {
@@ -129,4 +131,17 @@ it('applies a tag filter to report summaries and chart data', function () {
             'balance' => 100.0,
         ])
         ->assertViewHas('evolution', fn (array $evolution): bool => end($evolution)['income'] === 100.0);
+});
+
+it('offers a clear action when a report tag filter has no transactions', function () {
+    $response = $this->get(route('financial.reports', [
+        'period' => 'custom',
+        'startDate' => '2026-08-18',
+        'endDate' => '2026-08-18',
+        'tag_id' => 999999,
+    ]));
+
+    $response->assertSuccessful()
+        ->assertSee('Nenhuma transação corresponde a esta tag', false)
+        ->assertSee('Remover filtro', false);
 });

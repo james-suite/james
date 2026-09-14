@@ -5,12 +5,31 @@
     'heightClass' => 'h-[300px]',
 ])
 
-<div class="relative w-full {{ $heightClass }}" x-data="evolutionChartBase({
-    data: {{ $data ? $data : 'null' }},
+@php
+    $chartPayload = is_string($data) ? json_decode($data, true) : $data;
+    $chartPayload = is_array($chartPayload) ? $chartPayload : [];
+    $hasChartData = collect($chartPayload)->contains(function ($item): bool {
+        return abs((float) data_get($item, 'value', 0)) > 0.001
+            || abs((float) data_get($item, 'income', 0)) > 0.001
+            || abs((float) data_get($item, 'expense', 0)) > 0.001
+            || abs((float) data_get($item, 'future_expense', 0)) > 0.001;
+    });
+@endphp
+
+<div class="relative w-full {{ $heightClass }}" @if($hasChartData) role="img" aria-label="Gráfico de evolução financeira" x-data="evolutionChartBase({
+    data: {{ json_encode($chartPayload) }},
     incomeLabel: '{{ $incomeLabel }}',
     expenseLabel: '{{ $expenseLabel }}'
-})" x-init="initChart()">
-    <div x-ref="chartContainer" class="w-full h-full"></div>
+})" x-init="initChart()" @endif>
+    @if($hasChartData)
+        <div x-ref="chartContainer" class="w-full h-full"></div>
+    @else
+        <div class="flex h-full min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-neutral-50/60 px-4 text-center" role="status">
+            <x-heroicon-o-chart-bar class="mb-2 size-10 text-neutral-300" />
+            <p class="text-sm font-medium text-neutral-600">Sem movimentações para exibir</p>
+            <p class="mt-1 text-xs text-neutral-500">Ajuste o período ou registre uma transação.</p>
+        </div>
+    @endif
 </div>
 
 @once

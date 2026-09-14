@@ -31,6 +31,13 @@ it('can list transactions', function () {
         ->assertViewIs('finance.transactions.index');
 });
 
+it('explains when transaction filters return no results', function () {
+    $this->get(route('financial.transactions.index', ['search' => 'sem resultado']))
+        ->assertSuccessful()
+        ->assertSee('Nenhuma transação corresponde aos filtros', false)
+        ->assertSee('Limpar filtros', false);
+});
+
 it('renders accessible focus management hooks for transaction modals', function () {
     $this->get(route('financial.transactions.index'))
         ->assertSuccessful()
