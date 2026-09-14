@@ -9,27 +9,27 @@
 
     <!-- 1. Linha de Destaque: Os Grandes Números -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
-        <x-finance.kpi-card 
-            title="Saldo Líquido" 
-            :value="formatCurrency($kpi['netBalance'])" 
-            icon="heroicon-o-building-library" 
-            :color="$kpi['netBalance'] >= 0 ? 'green' : 'red'" 
+        <x-finance.kpi-card
+            title="Total de Despesas"
+            :value="formatCurrency($kpi['expense'])"
+            icon="heroicon-o-arrow-trending-down"
+            color="red"
+            :href="route('financial.transactions.index', ['type' => 'expense'])"
         />
 
-        <x-finance.kpi-card 
-            title="Total de Receitas" 
-            :value="formatCurrency($kpi['income'])" 
-            icon="heroicon-o-arrow-trending-up" 
-            color="green" 
+        <x-finance.kpi-card
+            title="Total de Receitas"
+            :value="formatCurrency($kpi['income'])"
+            icon="heroicon-o-arrow-trending-up"
+            color="green"
             :href="route('financial.transactions.index', ['type' => 'income'])"
         />
 
-        <x-finance.kpi-card 
-            title="Total de Despesas" 
-            :value="formatCurrency($kpi['expense'])" 
-            icon="heroicon-o-arrow-trending-down" 
-            color="red" 
-            :href="route('financial.transactions.index', ['type' => 'expense'])"
+        <x-finance.kpi-card
+            title="Saldo Líquido"
+            :value="formatCurrency($kpi['netBalance'])"
+            icon="heroicon-o-building-library"
+            :color="$kpi['netBalance'] >= 0 ? 'green' : 'red'"
         />
 
         <x-finance.kpi-card 
