@@ -255,6 +255,11 @@
         background-color: rgb(23 23 23 / 50%);
     }
 
+    html.t-modal-open,
+    html.t-modal-open body {
+        overflow: hidden;
+    }
+
     /* Focus global usando o sistema nativo do Tailwind para evitar conflitos com shadows.
        Excluímos inputs, selects e textareas para que mantenham seu design suave original. */
     :where(*:focus-visible):not(input, select, textarea) {
