@@ -297,7 +297,6 @@ class SettlementController extends Controller
                 $transaction = $this->createOrUpdateTransaction($settlement->financialTransaction, $validated, $settlement->contact);
                 $settlement->financial_transaction_id = $transaction->id;
             } elseif ($settlement->financial_transaction_id) {
-                $settlement->financialTransaction()->delete();
                 $settlement->financial_transaction_id = null;
             }
 

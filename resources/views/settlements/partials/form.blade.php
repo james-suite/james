@@ -48,6 +48,12 @@
             <div class="space-y-4 pt-4 border-t border-neutral-100" x-show="type !== 'i_owe'" x-transition>
                 <input type="hidden" name="create_transaction" value="0">
                 <x-switch name="create_transaction" x-model="createTransaction" label="Criar Transação?" value="1" color="accent" />
+
+                @if (isset($settlement) && $settlement->financial_transaction_id)
+                    <p x-show="!createTransaction" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                        A transação já criada será desvinculada deste acerto e continuará disponível em Finanças. Ela não será excluída.
+                    </p>
+                @endif
                 
                 <div class="space-y-4 pt-2" x-show="createTransaction" x-transition>
                     <x-radio-block-group legend="Onde">

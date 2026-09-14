@@ -239,6 +239,30 @@ it('preselects custom payment tags when editing a settlement', function () {
         ->assertViewHas('defaultPrimaryTag', $customTag->id);
 });
 
+it('keeps the financial transaction when an edited settlement stops linking to it', function () {
+    $contact = Contact::factory()->create();
+    $transaction = FinancialTransaction::factory()->create();
+    $settlement = Settlement::create([
+        'contact_id' => $contact->id,
+        'financial_transaction_id' => $transaction->id,
+        'type' => SettlementType::IPaid->value,
+        'amount' => 150,
+        'description' => 'Jantar',
+        'date' => '2026-08-30',
+    ]);
+
+    $this->put(route('settlements.update', $settlement), [
+        'type' => SettlementType::IPaid->value,
+        'amount' => 150,
+        'description' => 'Jantar',
+        'date' => '2026-08-30',
+        'create_transaction' => false,
+    ])->assertRedirect(route('settlements.contact.show', $contact));
+
+    $this->assertDatabaseHas('financial_transactions', ['id' => $transaction->id]);
+    expect($settlement->fresh()->financial_transaction_id)->toBeNull();
+});
+
 it('keeps reimbursement as the primary tag when no payment tags are selected', function () {
     FinancialTag::factory()->create([
         'id' => FinancialTag::REEMBOLSO_ID,
