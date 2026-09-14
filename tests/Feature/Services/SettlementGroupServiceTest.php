@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\SettlementType;
+use App\Enums\TransactionStatus;
 use App\Models\Contact;
 use App\Models\FinancialAccount;
+use App\Models\FinancialCreditCard;
 use App\Models\FinancialTag;
 use App\Models\Settlement;
 use App\Models\SettlementGroup;
@@ -88,6 +90,7 @@ it('creates a settlement group with a financial transaction and tags', function 
     $transaction->load('items.tags');
     expect($transaction->amount)->toEqual(100.0)
         ->and($transaction->financial_account_id)->toBe($account->id)
+        ->and($transaction->status)->toBe(TransactionStatus::Posted)
         ->and($transaction->items)->toHaveCount(2);
 
     $myItem = $transaction->items->where('description', 'Minha Parte')->first();
@@ -97,6 +100,32 @@ it('creates a settlement group with a financial transaction and tags', function 
     $contactItem = $transaction->items->where('description', $contact->name)->first();
     expect($contactItem->total)->toEqual(60.0)
         ->and($contactItem->tags->pluck('id')->toArray())->toContain(FinancialTag::REEMBOLSO_ID);
+});
+
+it('creates a card settlement group transaction as pending', function () {
+    $contact = Contact::factory()->create();
+    $card = FinancialCreditCard::factory()->create();
+
+    $group = $this->service->storeGroup([
+        'description' => 'Card Dinner',
+        'total_amount' => 100,
+        'date' => '2026-09-01',
+        'mode' => 'exact',
+        'my_amount' => 40,
+        'create_transaction' => true,
+        'targetType' => 'card',
+        'financial_credit_card_id' => $card->id,
+        'contacts' => [
+            ['id' => $contact->id, 'amount' => 60],
+        ],
+    ]);
+
+    $transaction = $group->financialTransaction;
+
+    expect($transaction->financial_account_id)->toBeNull()
+        ->and($transaction->financial_credit_card_invoice_id)->not->toBeNull()
+        ->and($transaction->invoice->financial_credit_card_id)->toBe($card->id)
+        ->and($transaction->status)->toBe(TransactionStatus::Pending);
 });
 
 it('updates a settlement group and replaces children', function () {

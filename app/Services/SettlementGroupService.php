@@ -178,6 +178,7 @@ class SettlementGroupService
             $card = FinancialCreditCard::findOrFail($validated['financial_credit_card_id']);
             $invoice = FinancialCreditCardInvoice::resolveForDate($card, $date);
             $data['financial_credit_card_invoice_id'] = $invoice->id;
+            $data['status'] = TransactionStatus::Pending;
         } else {
             $data['financial_account_id'] = $validated['financial_account_id'];
         }
