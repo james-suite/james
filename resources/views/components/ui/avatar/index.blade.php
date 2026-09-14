@@ -55,7 +55,14 @@
         <x-dynamic-component :component="$icon" class="w-[65%] h-[65%]" />
     </div>
 @elseif($avatarUrl)
-    <img src="{{ $avatarUrl }}" alt="{{ $model->name ?? 'Avatar' }}" {{ $attributes->merge(['class' => $imgBaseClasses]) }}>
+    <img src="{{ $avatarUrl }}" alt="{{ $model->name ?? 'Avatar' }}" onerror="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');" {{ $attributes->merge(['class' => $imgBaseClasses]) }}>
+    <div {{ $attributes->merge(['class' => $baseClasses . ' hidden']) }} aria-hidden="true">
+        @if(!empty($initials))
+            {{ $initials }}
+        @else
+            <x-heroicon-o-user class="w-[65%] h-[65%]" />
+        @endif
+    </div>
 @elseif(!empty($initials))
     <div {{ $attributes->merge(['class' => $baseClasses]) }}>
         {{ $initials }}
