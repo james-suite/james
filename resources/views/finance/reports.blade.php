@@ -1,17 +1,97 @@
 <x-layouts.financial>
     <x-page-header title="Relatórios Financeiros" icon="heroicon-o-chart-pie"></x-page-header>
 
-    <div class="lg:hidden">
-        <x-card class="mx-auto max-w-md text-center">
-            <div class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                <x-heroicon-o-computer-desktop class="size-7" />
+    <div class="space-y-4 pb-6 lg:hidden">
+        <form action="{{ route('financial.reports') }}" method="GET" x-data="{ period: @js($period), loading: false }" @submit="loading = true">
+            <x-card>
+                <div class="grid gap-4">
+                    <x-form-select name="period" label="Período" x-model="period">
+                        <option value="this_month">Este mês</option>
+                        <option value="last_month">Mês passado</option>
+                        <option value="last_3m">Últimos 3 meses</option>
+                        <option value="last_6m">Últimos 6 meses</option>
+                        <option value="this_year">Este ano</option>
+                        <option value="next_month">Próximo mês</option>
+                        <option value="next_6m">Próximos 6 meses</option>
+                        <option value="next_12m">Próximos 12 meses</option>
+                        <option value="all_time">Todo o período</option>
+                        <option value="until_today">Até hoje</option>
+                        <option value="custom">Personalizado</option>
+                    </x-form-select>
+
+                    <x-form-select name="account" label="Conta">
+                        <option value="">Todas as contas</option>
+                        @foreach ($accounts as $account)
+                            <option value="{{ $account->id }}" @selected($accountId == $account->id)>{{ $account->name }}</option>
+                        @endforeach
+                    </x-form-select>
+
+                    <div x-show="period === 'custom'" x-cloak class="grid grid-cols-2 gap-3">
+                        <x-form-input name="startDate" label="Início" type="date" :value="$startDate" />
+                        <x-form-input name="endDate" label="Fim" type="date" :value="$endDate" />
+                    </div>
+
+                    <x-button type="submit" class="w-full justify-center">
+                        <x-heroicon-o-funnel class="size-4" />
+                        Atualizar relatório
+                    </x-button>
+                </div>
+            </x-card>
+        </form>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <x-card class="p-4">
+                <p class="text-sm font-medium text-neutral-500">Receitas</p>
+                <p class="mt-1 text-xl font-bold text-green-600">+ {{ formatCurrency($summary['income']) }}</p>
+            </x-card>
+            <x-card class="p-4">
+                <p class="text-sm font-medium text-neutral-500">Despesas</p>
+                <p class="mt-1 text-xl font-bold text-red-600">- {{ formatCurrency($summary['expense']) }}</p>
+            </x-card>
+            <x-card class="p-4">
+                <p class="text-sm font-medium text-neutral-500">Resultado</p>
+                <p class="mt-1 text-xl font-bold {{ $summary['balance'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                    {{ $summary['balance'] >= 0 ? '+' : '-' }} {{ formatCurrency(abs($summary['balance'])) }}
+                </p>
+            </x-card>
+        </div>
+
+        <x-card>
+            <div class="mb-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-neutral-900">Principais categorias</h2>
+                    <p class="mt-1 text-sm text-neutral-500">Toque em uma categoria para filtrar o relatório.</p>
+                </div>
+                <x-heroicon-o-tag class="size-5 text-neutral-400" />
             </div>
-            <h2 class="mt-5 text-lg font-bold text-neutral-900">Relatórios disponíveis no computador</h2>
-            <p class="mt-2 text-sm leading-6 text-neutral-500">
-                Para visualizar os gráficos e analisar os relatórios financeiros, acesse esta página pelo computador.
-            </p>
-            <x-back-button fallback="{{ route('financial.dashboard') }}" class="mt-6 w-full justify-center" />
+
+            <div class="divide-y divide-neutral-100">
+                @forelse ($mobileCategories as $item)
+                    <a
+                        href="{{ route('financial.reports', ['period' => $period, 'account' => $accountId, 'startDate' => $startDate, 'endDate' => $endDate, 'tag_id' => $item['id']]) }}"
+                        class="flex min-h-11 items-center justify-between gap-3 py-3 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:ring-inset"
+                    >
+                        <span class="flex min-w-0 items-center gap-2">
+                            <x-dynamic-component :component="$item['icon']" class="size-4 shrink-0" style="color: {{ $item['color'] }}" />
+                            <span class="truncate font-medium text-neutral-900">{{ $item['name'] }}</span>
+                        </span>
+                        <span class="shrink-0 font-semibold {{ $item['type'] === 'expense' ? 'text-red-600' : 'text-green-600' }}">
+                            {{ $item['type'] === 'expense' ? '-' : '+' }} {{ formatCurrency($item['value']) }}
+                        </span>
+                    </a>
+                @empty
+                    <p class="py-4 text-sm text-neutral-500">Nenhuma movimentação no período.</p>
+                @endforelse
+            </div>
         </x-card>
+
+        <section aria-labelledby="mobile-report-transactions">
+            <div class="mb-4">
+                <h2 id="mobile-report-transactions" class="text-lg font-bold text-neutral-900">Lançamentos recentes</h2>
+                <p class="mt-1 text-sm text-neutral-500">Os cinco últimos lançamentos do período selecionado.</p>
+            </div>
+            <x-finance.transaction-table :transactions="$transactions->getCollection()->take(5)" />
+        </section>
     </div>
 
     <div class="hidden lg:block pb-2" x-data="reportsPage()" x-init="initCharts()">

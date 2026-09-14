@@ -123,6 +123,11 @@ class ReportsController extends Controller
             $accountBalancesChart = app(FinanceDashboardService::class)->getAccountBalancesChart($accountIds, true);
         }
 
+        $mobileCategories = collect([
+            ...array_map(fn (array $item): array => [...$item, 'type' => 'expense'], $reportData['tags']['expenses']),
+            ...array_map(fn (array $item): array => [...$item, 'type' => 'income'], $reportData['tags']['incomes']),
+        ])->sortByDesc('value')->take(5)->values();
+
         return view('finance.reports', [
             'accounts' => $accounts,
             'sankey' => $reportData['sankey'],
@@ -133,6 +138,12 @@ class ReportsController extends Controller
             'allExpenses' => $reportData['tags']['allExpenses'],
             'allIncomes' => $reportData['tags']['allIncomes'],
             'netTags' => $reportData['tags']['netTags'],
+            'mobileCategories' => $mobileCategories,
+            'summary' => [
+                'income' => $reportData['tags']['totalIncome'],
+                'expense' => $reportData['tags']['totalExpense'],
+                'balance' => $reportData['tags']['totalIncome'] - $reportData['tags']['totalExpense'],
+            ],
             'transactions' => $paginatedTransactions,
             'virtualTransactions' => $paginatedVirtual,
             'period' => $period,

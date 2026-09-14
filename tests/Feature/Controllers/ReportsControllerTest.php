@@ -27,6 +27,31 @@ it('respects the period query parameter', function () {
         ->assertViewHas('period', 'this_month');
 });
 
+it('provides a period summary for compact report views', function () {
+    FinancialTransaction::factory()->posted()->create([
+        'type' => 'income',
+        'amount' => 120,
+        'date' => '2026-08-18',
+    ]);
+    FinancialTransaction::factory()->posted()->create([
+        'type' => 'expense',
+        'amount' => 50,
+        'date' => '2026-08-18',
+    ]);
+
+    $this->get(route('financial.reports', [
+        'period' => 'custom',
+        'startDate' => '2026-08-18',
+        'endDate' => '2026-08-18',
+    ]))
+        ->assertSuccessful()
+        ->assertViewHas('summary', [
+            'income' => 120.0,
+            'expense' => 50.0,
+            'balance' => 70.0,
+        ]);
+});
+
 it('filters report rows by transaction and item tags before paginating', function () {
     $tag = FinancialTag::factory()->create();
     $startDate = '2026-08-18';
