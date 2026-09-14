@@ -87,7 +87,7 @@
     @endif
         @csrf
         @method('PATCH')
-        <x-button type="submit" color="green" class="w-full sm:w-auto">
+        <x-button type="submit" color="success" class="w-full sm:w-auto">
             {{ $confirmText }}
         </x-button>
     </form>

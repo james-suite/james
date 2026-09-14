@@ -174,3 +174,36 @@ it('index shows current open invoice, not the previous paid one', function () {
 
     Carbon::setTestNow();
 });
+
+it('uses the paid status color for a paid current invoice', function () {
+    Carbon::setTestNow(Carbon::create(2025, 8, 5));
+
+    $card = FinancialCreditCard::factory()->create([
+        'closing_day' => 10,
+        'due_day' => 15,
+    ]);
+
+    $invoice = FinancialCreditCardInvoice::factory()->create([
+        'financial_credit_card_id' => $card->id,
+        'reference_month' => '2025-08-01',
+        'closing_date' => '2025-08-10',
+        'due_date' => '2025-08-15',
+        'paid_at' => '2025-08-12',
+        'amount_paid' => 100.00,
+    ]);
+
+    FinancialTransaction::factory()->create([
+        'financial_credit_card_invoice_id' => $invoice->id,
+        'financial_account_id' => null,
+        'type' => 'expense',
+        'amount' => 100.00,
+        'date' => '2025-08-03',
+        'status' => TransactionStatus::Posted,
+    ]);
+
+    $this->get(route('financial.cards.index'))
+        ->assertSuccessful()
+        ->assertSeeInOrder(['Fatura Atual', 'text-green-600']);
+
+    Carbon::setTestNow();
+});
