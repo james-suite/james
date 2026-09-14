@@ -8,6 +8,10 @@
 @php
     $hasValidationError = $name && $errors->getBag($bag)->has($name);
     $describedBy = $hasValidationError ? $name . '-error' : null;
+    $attributes = $attributes->merge(array_filter([
+        'aria-invalid' => $hasValidationError ? 'true' : null,
+        'aria-describedby' => $describedBy,
+    ]));
 @endphp
 
 <x-field>
@@ -20,7 +24,6 @@
     <x-select
         :name="$name"
         :has-error="$hasValidationError"
-        @if ($hasValidationError) aria-invalid="true" aria-describedby="{{ $describedBy }}" @endif
         {{ $attributes }}
     >
         {{ $slot }}

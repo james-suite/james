@@ -20,6 +20,10 @@
         $hasValidationError ? $name . '-error' : null,
         $help ? $name . '-help' : null,
     ])->filter()->implode(' ');
+    $attributes = $attributes->except(['help'])->merge(array_filter([
+        'aria-invalid' => $hasValidationError ? 'true' : null,
+        'aria-describedby' => $describedBy ?: null,
+    ]));
 @endphp
 
 <x-field>
@@ -40,9 +44,7 @@
         :allow-negative="$allowNegative"
         :bag="$bag"
         :has-error="$hasValidationError"
-        @if ($hasValidationError) aria-invalid="true" @endif
-        @if ($describedBy) aria-describedby="{{ $describedBy }}" @endif
-        {{ $attributes->except(['help']) }}
+        {{ $attributes }}
     />
 
     @if ($help)
