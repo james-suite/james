@@ -1,6 +1,42 @@
 <x-layouts.financial>
     <x-page-header title="Tags Financeiras" :action="route('financial.tags.create')" actionText="Nova Tag" icon="heroicon-o-plus">
+        @if (count($availableDefaultTags) > 0)
+            <x-modal.trigger name="default-tags-modal">
+                <x-button type="button" color="outline" class="bg-white">
+                    <x-heroicon-o-sparkles class="size-4" />
+                    <span class="hidden sm:inline">Adicionar sugestões</span>
+                    <span class="sm:hidden">Sugestões</span>
+                </x-button>
+            </x-modal.trigger>
+        @endif
     </x-page-header>
+
+    @if (count($availableDefaultTags) > 0)
+        <x-modal name="default-tags-modal" title="Adicionar tags sugeridas" confirmVariant="none" size="lg">
+            <form action="{{ route('financial.tags.defaults') }}" method="POST" x-data="{ loading: false }" @submit="loading = true">
+                @csrf
+                <p class="mb-4 text-sm text-neutral-600">Escolha as categorias que fazem sentido para a sua organização. Você pode editar cada uma depois.</p>
+
+                <div class="grid max-h-80 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                    @foreach ($availableDefaultTags as $tag)
+                        <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-neutral-200 px-3 py-2 transition-colors hover:border-accent hover:bg-accent/5">
+                            <input type="checkbox" name="tags[]" value="{{ $tag['name'] }}" class="size-4 rounded border-neutral-300 text-accent focus:ring-accent" checked>
+                            <x-dynamic-component :component="$tag['icon']" class="size-4 shrink-0" style="color: {{ $tag['color_hex'] }}" />
+                            <span class="text-sm font-medium text-neutral-800">{{ $tag['name'] }}</span>
+                        </label>
+                    @endforeach
+                </div>
+
+                <div class="mt-6 flex flex-col-reverse gap-3 border-t border-neutral-100 pt-4 sm:flex-row sm:justify-end">
+                    <x-button type="button" color="outline" @click="$dispatch('modal-close', 'default-tags-modal')">Cancelar</x-button>
+                    <x-button type="submit" color="accent">
+                        <x-heroicon-o-plus class="size-4" />
+                        Adicionar selecionadas
+                    </x-button>
+                </div>
+            </form>
+        </x-modal>
+    @endif
 
     <x-filter-bar 
         action="{{ route('financial.tags.index') }}" 
