@@ -31,6 +31,14 @@ it('can list transactions', function () {
         ->assertViewIs('finance.transactions.index');
 });
 
+it('renders accessible focus management hooks for transaction modals', function () {
+    $this->get(route('financial.transactions.index'))
+        ->assertSuccessful()
+        ->assertSee('aria-modal="true"', false)
+        ->assertSee('data-modal-cancel', false)
+        ->assertSee('data-modal-state', false);
+});
+
 it('filters transactions by a date range including both boundaries', function () {
     FinancialTransaction::factory()->create(['date' => '2026-08-17']);
     $firstInRange = FinancialTransaction::factory()->create(['date' => '2026-08-18']);

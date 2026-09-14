@@ -34,8 +34,7 @@
              this.open = true;
 
              this.$nextTick(() => {
-                 const focusable = this.focusableElements();
-                 (focusable[0] ?? this.$refs.panel)?.focus();
+                 this.focusInitialElement();
              });
          },
          closeModal() {
@@ -46,15 +45,28 @@
              this.open = false;
              window.dispatchEvent(new CustomEvent('modal-closed', { detail: @js($name) }));
 
-             if (this.previouslyFocused instanceof HTMLElement && document.contains(this.previouslyFocused)) {
+             if (
+                 this.previouslyFocused instanceof HTMLElement
+                 && document.contains(this.previouslyFocused)
+                 && ! this.previouslyFocused.hasAttribute('disabled')
+             ) {
                  this.previouslyFocused.focus();
              }
-        },
-        focusableElements() {
-            return [...this.$refs.panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]')]
+         },
+         focusInitialElement() {
+             const preferred = @if($confirmVariant === 'danger') this.$refs.panel.querySelector('[data-modal-cancel]:not([disabled])') @else null @endif;
+             const autofocus = this.$refs.panel.querySelector('[autofocus]:not([disabled])');
+             const focusable = this.focusableElements();
+             const target = autofocus ?? preferred ?? focusable[0] ?? this.$refs.panel;
+
+             target.focus({ preventScroll: true });
+         },
+         focusableElements() {
+             return [...this.$refs.panel.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')]
                 .filter((element) => element.getAttribute('tabindex') !== '-1')
+                .filter((element) => ! element.hasAttribute('disabled'))
                 .filter((element) => element.offsetParent !== null);
-        },
+         },
          trapFocus(event) {
              const focusable = this.focusableElements();
              if (focusable.length === 0) {
@@ -73,10 +85,12 @@
              focusable[nextIndex].focus();
          }
      }"
-     x-effect="document.documentElement.classList.toggle('t-modal-open', open)"
+     x-bind:data-modal-state="open ? 'open' : 'closed'"
+     x-effect="document.documentElement.classList.toggle('t-modal-open', document.querySelectorAll('[data-modal-state=open]').length > 0)"
      @modal-open.window="if ($event.detail === '{{ $name }}') openModal()"
      @modal-close.window="if ($event.detail === '{{ $name }}') closeModal()"
      @keydown.escape.window="closeModal()"
+     @focusin.window="if (open && $refs.panel && !$refs.panel.contains($event.target)) { focusInitialElement(); }"
 >
 
     <template x-teleport="body">
@@ -166,6 +180,7 @@
                             <x-button type="button" 
                                       color="outline"
                                       class="mt-3 w-full sm:mt-0 sm:w-auto"
+                                      data-modal-cancel
                                       @click="closeModal(); $dispatch('modal-cancel')">
                                 Cancelar
                             </x-button>
