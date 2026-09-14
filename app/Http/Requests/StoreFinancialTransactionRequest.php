@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\TransactionStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Validator;
 
 class StoreFinancialTransactionRequest extends FormRequest
 {
@@ -66,6 +67,24 @@ class StoreFinancialTransactionRequest extends FormRequest
             'items.*.primary_tag_id' => ['nullable', 'exists:financial_tags,id'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'mimes:jpg,jpeg,png,pdf', 'max:10240'],
+        ];
+    }
+
+    /**
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                if (
+                    $this->input('mode') === 'installment'
+                    && $this->input('targetType') === 'card'
+                    && $this->input('type') === 'income'
+                ) {
+                    $validator->errors()->add('type', 'Parcelamentos no cartão só podem ser despesas.');
+                }
+            },
         ];
     }
 

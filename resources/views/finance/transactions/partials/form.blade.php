@@ -62,8 +62,9 @@
             {{-- Receita ou Despesa --}}
             <x-radio-block-group legend="Classificação">
                 <x-radio-block name="type" x-model="type" value="expense" icon="heroicon-o-arrow-trending-down" label="Despesa" activeClass="peer-checked:text-red-600" inactiveClass="text-red-600 hover:text-red-700" />
-                <x-radio-block name="type" x-model="type" value="income" icon="heroicon-o-arrow-trending-up" label="Receita" activeClass="peer-checked:text-green-600" inactiveClass="text-green-600 hover:text-green-700" />
+                <x-radio-block name="type" x-model="type" value="income" icon="heroicon-o-arrow-trending-up" label="Receita" activeClass="peer-checked:text-green-600" inactiveClass="text-green-600 hover:text-green-700" ::disabled="mode === 'installment' && targetType === 'card'" />
             </x-radio-block-group>
+            <p class="text-xs text-neutral-500 -mt-3" x-show="mode === 'installment' && targetType === 'card'">Parcelamentos no cartão são registrados como despesa.</p>
 
             {{-- Conta ou Cartão --}}
             <div class="space-y-4 pt-2">

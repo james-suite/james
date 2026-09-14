@@ -119,6 +119,23 @@ it('stores a transaction only on the selected target when both ids are submitted
         ->and(FinancialCreditCardInvoice::query()->count())->toBe(0);
 });
 
+it('rejects income installments on credit cards', function () {
+    $card = FinancialCreditCard::factory()->create();
+
+    $this->post(route('financial.transactions.store'), [
+        'mode' => 'installment',
+        'targetType' => 'card',
+        'financial_credit_card_id' => $card->id,
+        'type' => 'income',
+        'amount' => 300,
+        'description' => 'Receita parcelada',
+        'date' => now()->format('Y-m-d'),
+        'installments' => 3,
+    ])->assertSessionHasErrors('type');
+
+    expect(FinancialTransaction::query()->count())->toBe(0);
+});
+
 it('does not assign a primary tag to a transaction created with items', function () {
     $account = FinancialAccount::factory()->create();
     $transactionTag = FinancialTag::factory()->create();

@@ -33,7 +33,7 @@
             let options = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
             return value.toLocaleString('pt-BR', options);
         }
-    }" x-effect="if (items.length > 0) amount = itemsTotal.toFixed(2); if (date) { let d = new Date(date + 'T00:00:00'); let t = new Date(); t.setHours(0,0,0,0); if (d > t) $dispatch('uncheck-posted') }">
+    }" x-effect="if (items.length > 0) amount = itemsTotal.toFixed(2); if (date) { let d = new Date(date + 'T00:00:00'); let t = new Date(); t.setHours(0,0,0,0); if (d > t) $dispatch('uncheck-posted') } if (mode === 'installment' && targetType === 'card') type = 'expense'">
         @csrf
         <input type="hidden" name="targetType" x-model="targetType">
 
