@@ -49,11 +49,12 @@
              if (this.previouslyFocused instanceof HTMLElement && document.contains(this.previouslyFocused)) {
                  this.previouslyFocused.focus();
              }
-         },
-         focusableElements() {
-             return [...this.$refs.panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])')]
-                 .filter((element) => element.offsetParent !== null);
-         },
+        },
+        focusableElements() {
+            return [...this.$refs.panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]')]
+                .filter((element) => element.getAttribute('tabindex') !== '-1')
+                .filter((element) => element.offsetParent !== null);
+        },
          trapFocus(event) {
              const focusable = this.focusableElements();
              if (focusable.length === 0) {
