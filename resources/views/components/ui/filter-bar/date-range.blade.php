@@ -20,6 +20,7 @@
             type="date"
             name="{{ $nameStart }}"
             value="{{ $valueStart }}"
+            aria-label="{{ $titleStart ?: 'Data inicial' }}"
             @change="emptyStart = !$event.target.value"
             class="w-full min-w-0 sm:w-auto bg-transparent border-0 py-2 sm:py-1.5 {{ $titleStart ? 'pl-7' : 'px-3' }} pr-2 text-sm text-neutral-600 focus:outline-none focus:ring-0 focus:bg-neutral-100 rounded-md cursor-pointer transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
         >
@@ -45,6 +46,7 @@
             type="date"
             name="{{ $nameEnd }}"
             value="{{ $valueEnd }}"
+            aria-label="{{ $titleEnd ?: 'Data final' }}"
             @change="emptyEnd = !$event.target.value"
             class="w-full min-w-0 sm:w-auto bg-transparent border-0 py-2 sm:py-1.5 px-3 text-sm text-neutral-600 focus:outline-none focus:ring-0 focus:bg-neutral-100 rounded-md cursor-pointer transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
         >

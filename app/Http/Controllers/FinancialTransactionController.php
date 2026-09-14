@@ -67,6 +67,14 @@ class FinancialTransactionController extends Controller
             $query->whereDate('date', $request->date);
         }
 
+        if ($request->filled('date_start')) {
+            $query->whereDate('date', '>=', $request->date_start);
+        }
+
+        if ($request->filled('date_end')) {
+            $query->whereDate('date', '<=', $request->date_end);
+        }
+
         if ($request->filled('tag_id')) {
             $query->where(function ($query) use ($request) {
                 $query->whereHas('tags', function ($tagQuery) use ($request) {

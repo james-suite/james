@@ -95,7 +95,7 @@
     <x-filter-bar 
         action="{{ route('financial.transactions.index') }}" 
         searchPlaceholder="Buscar por descrição..." 
-        :filters="['search', 'account_id', 'tag_id', 'type', 'status', 'date']">
+        :filters="['search', 'account_id', 'tag_id', 'type', 'status', 'date_start', 'date_end']">
         
         <div class="flex flex-col sm:flex-row w-full sm:w-auto divide-y sm:divide-y-0 sm:divide-x divide-neutral-200">
             <x-filter-bar.select name="account_id">
@@ -125,7 +125,10 @@
                 <option value="draft" @selected(request('status') === 'draft')>Rascunhos</option>
             </x-filter-bar.select>
 
-            <x-filter-bar.date name="date" :value="request('date')" title="Data específica" />
+            <x-filter-bar.date-range
+                name-start="date_start" value-start="{{ request('date_start') }}" title-start="Data inicial"
+                name-end="date_end" value-end="{{ request('date_end') }}" title-end="Data final"
+            />
         </div>
     </x-filter-bar>
 

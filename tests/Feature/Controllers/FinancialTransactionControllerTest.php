@@ -30,6 +30,22 @@ it('can list transactions', function () {
         ->assertViewIs('finance.transactions.index');
 });
 
+it('filters transactions by a date range including both boundaries', function () {
+    FinancialTransaction::factory()->create(['date' => '2026-08-17']);
+    $firstInRange = FinancialTransaction::factory()->create(['date' => '2026-08-18']);
+    $lastInRange = FinancialTransaction::factory()->create(['date' => '2026-08-20']);
+    FinancialTransaction::factory()->create(['date' => '2026-08-21']);
+
+    $this->get(route('financial.transactions.index', [
+        'date_start' => '2026-08-18',
+        'date_end' => '2026-08-20',
+    ]))
+        ->assertSuccessful()
+        ->assertViewHas('transactions', function ($transactions) use ($firstInRange, $lastInRange): bool {
+            return $transactions->pluck('id')->sort()->values()->all() === collect([$firstInRange->id, $lastInRange->id])->sort()->values()->all();
+        });
+});
+
 it('filters transactions by tags attached directly or to an item', function () {
     $tag = FinancialTag::factory()->create();
     $directlyTaggedTransaction = FinancialTransaction::factory()->create();
