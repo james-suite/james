@@ -20,7 +20,7 @@
 @endphp
 
 <form
-    {{ $attributes->merge(['action' => $action, 'method' => 'GET', 'class' => "t-acc min-w-0 max-w-full flex flex-col sm:flex-row items-stretch {$alignClass} gap-0 sm:gap-1 mb-8 bg-white p-1 rounded-xl border border-neutral-200 shadow-sm w-full sm:w-fit transition-all focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/40"]) }}
+    {{ $attributes->merge(['action' => $action, 'method' => 'GET', 'class' => "t-acc min-w-0 max-w-full flex flex-col sm:flex-row items-stretch {$alignClass} gap-0 sm:gap-1 mb-8 bg-white p-1 rounded-xl border border-neutral-200 shadow-sm w-full sm:w-fit sm:overflow-x-auto sm:overflow-y-hidden sm:scroll-fade-x sm:overscroll-x-contain transition-all focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/40"]) }}
     x-data="{ loading: false, expanded: @js(!$showMobileToggle) }"
     data-open="{{ $showMobileToggle ? 'false' : 'true' }}"
     x-bind:data-open="expanded"
@@ -63,7 +63,7 @@
     <!-- Collapsible Area (Mobile) / Inline Area (Desktop) -->
     <div class="t-acc-panel t-acc-panel--desktop-open">
         <div
-            class="t-acc-panel-inner mt-2 flex min-w-0 max-w-full flex-col items-stretch border-t border-neutral-100 pt-2 sm:mt-0 sm:!flex sm:flex-row sm:border-t-0 sm:pt-0 {{ $alignClass }}"
+            class="t-acc-panel-inner mt-2 flex min-w-0 max-w-full flex-col items-stretch border-t border-neutral-100 pt-2 sm:mt-0 sm:min-w-max sm:!flex sm:flex-row sm:flex-nowrap sm:border-t-0 sm:pt-0 {{ $alignClass }}"
             x-bind:class="{ '!mt-0 !border-t-0 !pt-0': !expanded }"
         >
             @if($slot->isNotEmpty())
