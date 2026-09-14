@@ -19,7 +19,12 @@
         reader.onload = (e) => {
             this.$refs.cropperImage.src = e.target.result;
             this.isModalOpen = true;
-            this.$nextTick(() => {
+            this.$nextTick(async () => {
+                const Cropper = await window.loadCropper();
+                if (!this.isModalOpen) {
+                    return;
+                }
+
                 if (this.cropper) {
                     this.cropper.destroy();
                 }

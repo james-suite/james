@@ -18,27 +18,34 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('evolutionChartBase', (config) => ({
         chartInstance: null,
+        resizeHandler: null,
         data: config.data,
         incomeLabel: config.incomeLabel,
         expenseLabel: config.expenseLabel,
         
-        initChart() {
-            if (!window.echarts) {
-                console.error("ECharts is not loaded.");
+        async initChart() {
+            if (!this.$refs.chartContainer.offsetParent) {
                 return;
             }
+
+            const echarts = await window.loadEcharts();
+            this.chartInstance = echarts.init(this.$refs.chartContainer);
             
-            this.chartInstance = window.echarts.init(this.$refs.chartContainer);
-            
-            window.addEventListener('resize', () => {
+            this.resizeHandler = () => {
                 if (this.chartInstance) {
                     this.chartInstance.resize();
                 }
-            });
+            };
+            window.addEventListener('resize', this.resizeHandler);
 
             if (this.data) {
                 this.render(this.data);
             }
+        },
+
+        destroy() {
+            window.removeEventListener('resize', this.resizeHandler);
+            this.chartInstance?.dispose();
         },
 
         updateChart(newData) {
@@ -47,6 +54,11 @@ document.addEventListener('alpine:init', () => {
         },
 
         render(data) {
+            this.data = data;
+            if (!this.chartInstance) {
+                return;
+            }
+
             if (!data || data.length === 0) {
                 this.chartInstance.clear();
                 return;

@@ -249,6 +249,9 @@
         Alpine.data('reportsPage', () => ({
             period: @json($period),
             selectedTagId: @js($selectedTagId),
+            echarts: null,
+            sankeyChart: null,
+            resizeHandler: null,
 
             filterByTag(tagId) {
                 const url = new URL(window.location.href);
@@ -278,20 +281,25 @@
                 this.$root.querySelector('form').submit();
             },
 
-            initCharts() {
-                if (!window.echarts) {
-                    console.error('ECharts not loaded.');
+            async initCharts() {
+                if (!this.$root.offsetParent) {
                     return;
                 }
 
+                this.echarts = await window.loadEcharts();
                 this.renderSankey();
             },
 
+            destroy() {
+                window.removeEventListener('resize', this.resizeHandler);
+                this.sankeyChart?.dispose();
+            },
+
             renderSankey() {
-                const chart = window.echarts.init(this.$refs.chartSankey);
+                this.sankeyChart = this.echarts.init(this.$refs.chartSankey);
                 const data = @json($sankey);
 
-                chart.setOption({
+                this.sankeyChart.setOption({
                     tooltip: { trigger: 'item', triggerOn: 'mousemove' },
                     series: [{
                         type: 'sankey',
@@ -303,7 +311,8 @@
                     }]
                 });
 
-                window.addEventListener('resize', () => chart.resize());
+                this.resizeHandler = () => this.sankeyChart?.resize();
+                window.addEventListener('resize', this.resizeHandler);
             }
         }));
     });
