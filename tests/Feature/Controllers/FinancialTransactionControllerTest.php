@@ -693,6 +693,50 @@ it('can store a transfer between accounts', function () {
     ]);
 });
 
+it('edits both sides of a transfer atomically', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::TRANSFERENCIA_ID,
+        'name' => 'Transferência',
+        'is_protected' => true,
+    ]);
+
+    $accountFrom = FinancialAccount::factory()->create();
+    $accountTo = FinancialAccount::factory()->create();
+    $newAccountFrom = FinancialAccount::factory()->create();
+    $newAccountTo = FinancialAccount::factory()->create();
+    [$expense, $income] = FinancialTransaction::createTransfer(
+        $accountFrom,
+        $accountTo,
+        500,
+        Carbon::parse('2026-08-17'),
+        'Transferência original',
+    );
+
+    $this->get(route('financial.transactions.transfer.edit', $income))
+        ->assertSuccessful()
+        ->assertViewIs('finance.transactions.transfer-edit');
+
+    $this->put(route('financial.transactions.transfer.update', $income), [
+        'from_account_id' => $newAccountFrom->id,
+        'to_account_id' => $newAccountTo->id,
+        'amount' => 650,
+        'date' => '2026-08-18',
+        'description' => 'Transferência atualizada',
+        'status' => TransactionStatus::Posted->value,
+    ])->assertRedirect(route('financial.transactions.show', $income));
+
+    $expense->refresh();
+    $income->refresh();
+
+    expect($expense->financial_account_id)->toBe($newAccountFrom->id)
+        ->and($expense->amount)->toBe('650.00')
+        ->and($expense->description)->toBe('Transferência atualizada')
+        ->and($income->financial_account_id)->toBe($newAccountTo->id)
+        ->and($income->amount)->toBe('650.00')
+        ->and($income->description)->toBe('Transferência atualizada')
+        ->and($expense->transfer_pair_id)->toBe($income->transfer_pair_id);
+});
+
 it('uses the selected fee tag when storing a transfer', function () {
     FinancialTag::factory()->create([
         'id' => FinancialTag::TRANSFERENCIA_ID,

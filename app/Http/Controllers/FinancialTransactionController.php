@@ -8,6 +8,7 @@ use App\Http\Requests\StoreFinancialTransactionRequest;
 use App\Http\Requests\StoreFinancialTransferRequest;
 use App\Http\Requests\StoreNfceImportRequest;
 use App\Http\Requests\UpdateFinancialTransactionRequest;
+use App\Http\Requests\UpdateFinancialTransferRequest;
 use App\Jobs\ScrapeNfceInvoiceJob;
 use App\Models\FinancialAccount;
 use App\Models\FinancialCreditCard;
@@ -314,6 +315,8 @@ class FinancialTransactionController extends Controller
             $editRoute = route('settlements.groups.edit', $settlementGroup);
         } elseif ($transaction->settlements->isNotEmpty()) {
             $editRoute = route('settlements.edit', $transaction->settlements->first());
+        } elseif ($transaction->transfer_pair_id && $transaction->transferPair) {
+            $editRoute = route('financial.transactions.transfer.edit', $transaction->id);
         }
 
         return view('finance.transactions.show', compact('transaction', 'settlementGroup', 'isSettlementTransaction', 'editRoute'));
@@ -321,6 +324,8 @@ class FinancialTransactionController extends Controller
 
     public function edit(FinancialTransaction $transaction): View
     {
+        abort_if($transaction->transfer_pair_id, 404, 'Transferências devem ser editadas pelo formulário de transferência.');
+
         $transaction->load(['tags', 'items.tags', 'invoice.creditCard']);
         $accounts = FinancialAccount::orderBy('name')->get();
         $cards = FinancialCreditCard::orderBy('name')->get();
@@ -334,6 +339,80 @@ class FinancialTransactionController extends Controller
         });
 
         return view('finance.transactions.edit', compact('transaction', 'accounts', 'cards', 'tags'));
+    }
+
+    public function editTransfer(FinancialTransaction $transaction): View
+    {
+        [$expense, $income] = $this->transferEntries($transaction);
+        $fee = $this->findTransferFee($expense);
+        $feeTagId = $fee?->tags()->first()?->id;
+        $accounts = FinancialAccount::orderBy('name')->get();
+        $feeTags = FinancialTag::query()
+            ->where('id', '!=', FinancialTag::TRANSFERENCIA_ID)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+        $isPosted = old('status', $expense->status?->value) === TransactionStatus::Posted->value;
+
+        return view('finance.transactions.transfer-edit', compact(
+            'expense',
+            'income',
+            'fee',
+            'feeTagId',
+            'accounts',
+            'feeTags',
+            'isPosted',
+        ));
+    }
+
+    public function updateTransfer(UpdateFinancialTransferRequest $request, FinancialTransaction $transaction): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        DB::transaction(function () use ($validated, $transaction): void {
+            $lockedTransaction = FinancialTransaction::query()->lockForUpdate()->findOrFail($transaction->id);
+            [$expense, $income] = $this->transferEntries($lockedTransaction);
+            $fee = $this->findTransferFee($expense);
+            $date = Carbon::parse($validated['date']);
+            $status = $validated['status'] ?? $expense->status?->value;
+            $description = $validated['description'];
+
+            $expense->update([
+                'financial_account_id' => $validated['from_account_id'],
+                'type' => 'expense',
+                'amount' => $validated['amount'],
+                'description' => $description,
+                'date' => $date,
+                'status' => $status,
+            ]);
+            $income->update([
+                'financial_account_id' => $validated['to_account_id'],
+                'type' => 'income',
+                'amount' => $validated['amount'],
+                'description' => $description,
+                'date' => $date,
+                'status' => $status,
+            ]);
+
+            if (! empty($validated['fee_amount'])) {
+                $fee ??= new FinancialTransaction;
+                $fee->fill([
+                    'financial_account_id' => $validated['from_account_id'],
+                    'type' => 'expense',
+                    'amount' => $validated['fee_amount'],
+                    'description' => 'Taxa/imposto — '.$description,
+                    'date' => $date,
+                    'status' => $status,
+                ]);
+                $fee->save();
+                $feeTagId = $validated['fee_tag_id'] ?? FinancialTag::JUROS_ID;
+                $fee->tags()->sync([$feeTagId => ['is_primary' => true]]);
+            } elseif ($fee) {
+                $fee->delete();
+            }
+        });
+
+        return redirect()->route('financial.transactions.show', $transaction)
+            ->with('success', 'Transferência atualizada com sucesso.');
     }
 
     public function update(UpdateFinancialTransactionRequest $request, FinancialTransaction $transaction): RedirectResponse
@@ -428,6 +507,34 @@ class FinancialTransactionController extends Controller
         $transaction->forceDelete();
 
         return redirect()->back()->with('success', 'Transação excluída permanentemente.');
+    }
+
+    /**
+     * @return array{0: FinancialTransaction, 1: FinancialTransaction}
+     */
+    private function transferEntries(FinancialTransaction $transaction): array
+    {
+        abort_unless($transaction->transfer_pair_id, 404);
+
+        $pair = FinancialTransaction::query()
+            ->where('transfer_pair_id', $transaction->transfer_pair_id)
+            ->where('id', '!=', $transaction->id)
+            ->firstOrFail();
+
+        return $transaction->type === 'expense'
+            ? [$transaction, $pair]
+            : [$pair, $transaction];
+    }
+
+    private function findTransferFee(FinancialTransaction $expense): ?FinancialTransaction
+    {
+        return FinancialTransaction::query()
+            ->where('financial_account_id', $expense->financial_account_id)
+            ->where('type', 'expense')
+            ->whereDate('date', $expense->date)
+            ->where('description', 'Taxa/imposto — '.$expense->description)
+            ->whereNull('transfer_pair_id')
+            ->first();
     }
 
     /**
