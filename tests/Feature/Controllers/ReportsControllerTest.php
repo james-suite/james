@@ -99,3 +99,34 @@ it('filters report rows by transaction and item tags before paginating', functio
         ->and((float) $transactions->first()->amount)->toBe(10.0)
         ->and($transactions->first()->tags->modelKeys())->toBe([$tag->id]);
 });
+
+it('applies a tag filter to report summaries and chart data', function () {
+    $tag = FinancialTag::factory()->create();
+    $tagged = FinancialTransaction::factory()->posted()->create([
+        'type' => 'income',
+        'amount' => 100,
+        'date' => '2026-08-18',
+    ]);
+    $tagged->tags()->attach($tag, ['is_primary' => true]);
+
+    FinancialTransaction::factory()->posted()->create([
+        'type' => 'income',
+        'amount' => 250,
+        'date' => '2026-08-18',
+    ]);
+
+    $response = $this->get(route('financial.reports', [
+        'period' => 'custom',
+        'startDate' => '2026-08-18',
+        'endDate' => '2026-08-18',
+        'tag_id' => $tag->id,
+    ]));
+
+    $response->assertSuccessful()
+        ->assertViewHas('summary', [
+            'income' => 100.0,
+            'expense' => 0,
+            'balance' => 100.0,
+        ])
+        ->assertViewHas('evolution', fn (array $evolution): bool => end($evolution)['income'] === 100.0);
+});

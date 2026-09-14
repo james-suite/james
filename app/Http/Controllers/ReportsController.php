@@ -76,25 +76,17 @@ class ReportsController extends Controller
             $endDate = $now->copy()->endOfMonth();
         }
 
-        $reportData = $this->reportsService->getAll($startDate, $endDate, $accountIds);
-
         $accounts = FinancialAccount::orderBy('name')->get();
-
-        $allTransactions = $reportData['tableTransactions'];
         $selectedTagId = $request->filled('tag_id') ? $request->integer('tag_id') : null;
+        $reportData = $this->reportsService->getAll(
+            $startDate,
+            $endDate,
+            $accountIds,
+            tagId: $selectedTagId,
+        );
 
-        if ($selectedTagId !== null) {
-            $allTransactions = $allTransactions->filter(function (FinancialTransaction $transaction) use ($selectedTagId): bool {
-                if ($selectedTagId === 0) {
-                    return $transaction->tags->isEmpty();
-                }
-
-                return $transaction->tags->contains('id', $selectedTagId);
-            });
-        }
-
-        $realTransactions = $allTransactions->reject(fn ($t) => isset($t->is_virtual) && $t->is_virtual);
-        $virtualTransactions = $allTransactions->filter(fn ($t) => isset($t->is_virtual) && $t->is_virtual);
+        $realTransactions = $reportData['tableTransactions']->reject(fn ($t) => isset($t->is_virtual) && $t->is_virtual);
+        $virtualTransactions = $reportData['tableTransactions']->filter(fn ($t) => isset($t->is_virtual) && $t->is_virtual);
 
         $page = request()->get('page', 1);
         $virtualPage = request()->get('virtual_page', 1);

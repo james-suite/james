@@ -7,6 +7,7 @@ use App\Models\FinancialCreditCardInvoice;
 use App\Models\FinancialRecurrence;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -18,18 +19,24 @@ class ReportsService
      *
      * @return array{sankey: array, evolution: array, tags: array, transactions: Collection}
      */
-    public function getAll(Carbon $startDate, Carbon $endDate, ?array $accountIds = null): array
-    {
+    public function getAll(
+        Carbon $startDate,
+        Carbon $endDate,
+        ?array $accountIds = null,
+        ?string $granularity = null,
+        ?int $tagId = null,
+    ): array {
         $transactions = $this->getUnifiedTransactions($startDate, $endDate, $accountIds);
+        $transactions = $this->filterTransactionsByTag($transactions, $tagId);
         $flattenedForTags = $this->flattenTransactionsForTags($transactions);
         $tableTransactions = $this->flattenTransactionsForTable($transactions);
 
-        $initialBalance = $this->getInitialBalance($startDate, $accountIds);
-        $initialNetWorth = $this->getInitialNetWorth($startDate, $accountIds);
+        $initialBalance = $this->getInitialBalance($startDate, $accountIds, $tagId);
+        $initialNetWorth = $this->getInitialNetWorth($startDate, $accountIds, $tagId);
 
         return [
             'sankey' => $this->buildSankeyData($flattenedForTags, $initialBalance),
-            'evolution' => $this->buildEvolutionData($transactions, $startDate, $endDate, $initialBalance, $accountIds),
+            'evolution' => $this->buildEvolutionData($transactions, $startDate, $endDate, $initialBalance, $accountIds, $tagId),
             'netWorthEvolution' => $this->buildNetWorthEvolutionData($transactions, $startDate, $endDate, $initialNetWorth),
             'tags' => $this->buildTagsData($flattenedForTags),
             'transactions' => $transactions,
@@ -186,6 +193,46 @@ class ReportsService
         return $flattened;
     }
 
+    private function filterTransactionsByTag(Collection $transactions, ?int $tagId): Collection
+    {
+        if ($tagId === null) {
+            return $transactions;
+        }
+
+        return $transactions->flatMap(function (FinancialTransaction $transaction) use ($tagId): array {
+            $items = $transaction->relationLoaded('items') ? $transaction->items : collect();
+            $hasItemTags = $items->contains(fn ($item): bool => $item->tags->isNotEmpty());
+            $hasDirectTag = $tagId === 0
+                ? $transaction->tags->isEmpty() && ! $hasItemTags
+                : $transaction->tags->contains('id', $tagId);
+
+            if ($hasDirectTag) {
+                return [$transaction];
+            }
+
+            $matchingItems = $items->filter(function ($item) use ($tagId): bool {
+                return $tagId === 0
+                    ? $item->tags->isEmpty()
+                    : $item->tags->contains('id', $tagId);
+            })->values();
+
+            if ($matchingItems->isEmpty()) {
+                return [];
+            }
+
+            $filteredTransaction = clone $transaction;
+            $filteredTransaction->setRelation('items', $matchingItems);
+
+            if ($tagId !== 0) {
+                $filteredTransaction->amount = $matchingItems->sum(
+                    fn ($item): float => (float) $item->unit_price * (float) $item->quantity,
+                );
+            }
+
+            return [$filteredTransaction];
+        })->values();
+    }
+
     private function addFrequency(Carbon $date, string $frequency): Carbon
     {
         return match ($frequency) {
@@ -289,8 +336,14 @@ class ReportsService
         ];
     }
 
-    private function buildEvolutionData(Collection $transactions, Carbon $startDate, Carbon $endDate, float $initialBalance, ?array $accountIds = null): array
-    {
+    private function buildEvolutionData(
+        Collection $transactions,
+        Carbon $startDate,
+        Carbon $endDate,
+        float $initialBalance,
+        ?array $accountIds = null,
+        ?int $tagId = null,
+    ): array {
         $periods = [];
         $currentDate = $startDate->copy();
 
@@ -299,36 +352,30 @@ class ReportsService
             $currentDate->addDay();
         }
 
-        // Cash-basis: exclude CC invoice transactions (their cash impact is via the payment transaction)
-        $query = FinancialTransaction::forAccounts($accountIds)
-            ->withoutDrafts()
-            ->whereNull('financial_credit_card_invoice_id')
-            ->whereBetween('date', [$startDate, $endDate]);
-
-        if (empty($accountIds)) {
-            $query->withoutTransfers();
-        }
-
-        $cashFlows = $query->selectRaw('date')
-            ->selectRaw("SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income")
-            ->selectRaw("SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense")
-            ->groupBy('date')
-            ->get();
+        // Cash-basis: exclude CC invoice transactions (their cash impact is via the payment transaction).
+        $cashFlows = $tagId === null
+            ? $this->getCashFlows($startDate, $endDate, $accountIds)
+            : collect($this->getFilteredCashFlows($transactions, $startDate, $endDate));
 
         $virtuals = $transactions->where('is_virtual', true);
 
-        foreach ($cashFlows as $cf) {
-            $key = is_string($cf->date) ? substr($cf->date, 0, 10) : $cf->date->format('Y-m-d');
+        foreach ($cashFlows as $date => $cf) {
+            $key = substr((string) $date, 0, 10);
+            $income = is_array($cf) ? $cf['income'] : $cf->income;
+            $expense = is_array($cf) ? $cf['expense'] : $cf->expense;
+
             if (isset($periods[$key])) {
-                $periods[$key]['income'] += (float) $cf->income;
-                $periods[$key]['expense'] += (float) $cf->expense;
+                $periods[$key]['income'] += (float) $income;
+                $periods[$key]['expense'] += (float) $expense;
             }
         }
 
         // Add invoice cash flows for the period (cash-basis: paid on paid_at, unpaid on due_date)
-        foreach ($this->buildInvoicePeriodFlows($startDate, $endDate, $accountIds) as $dateStr => $amount) {
-            if (isset($periods[$dateStr])) {
-                $periods[$dateStr]['expense'] += $amount;
+        if ($tagId === null) {
+            foreach ($this->buildInvoicePeriodFlows($startDate, $endDate, $accountIds) as $dateStr => $amount) {
+                if (isset($periods[$dateStr])) {
+                    $periods[$dateStr]['expense'] += $amount;
+                }
             }
         }
 
@@ -550,7 +597,61 @@ class ReportsService
         ];
     }
 
-    private function getInitialBalance(Carbon $startDate, ?array $accountIds = null): float
+    private function getCashFlows(Carbon $startDate, Carbon $endDate, ?array $accountIds = null): Collection
+    {
+        $query = FinancialTransaction::forAccounts($accountIds)
+            ->withoutDrafts()
+            ->whereNull('financial_credit_card_invoice_id')
+            ->whereBetween('date', [$startDate, $endDate]);
+
+        if (empty($accountIds)) {
+            $query->withoutTransfers();
+        }
+
+        return $query->selectRaw('date')
+            ->selectRaw("SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income")
+            ->selectRaw("SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense")
+            ->groupBy('date')
+            ->get()
+            ->keyBy(fn ($flow): string => Carbon::parse($flow->date)->format('Y-m-d'));
+    }
+
+    /**
+     * @return array<string, array{income: float, expense: float}>
+     */
+    private function getFilteredCashFlows(Collection $transactions, Carbon $startDate, Carbon $endDate): array
+    {
+        $flows = [];
+        $invoiceTransactions = $transactions
+            ->filter(fn (FinancialTransaction $transaction): bool => ! ($transaction->is_virtual ?? false) && $transaction->invoice)
+            ->groupBy(fn (FinancialTransaction $transaction): int => $transaction->invoice->id);
+
+        foreach ($transactions as $transaction) {
+            if (($transaction->is_virtual ?? false) || $transaction->invoice) {
+                continue;
+            }
+
+            $date = Carbon::parse($transaction->date)->format('Y-m-d');
+            $flows[$date] ??= ['income' => 0.0, 'expense' => 0.0];
+            $flows[$date][$transaction->type === 'income' ? 'income' : 'expense'] += (float) $transaction->amount;
+        }
+
+        foreach ($invoiceTransactions as $transactionsForInvoice) {
+            $invoice = $transactionsForInvoice->first()->invoice;
+            $date = $invoice->paid_at?->format('Y-m-d') ?? $invoice->due_date?->format('Y-m-d');
+
+            if (! $date || ! Carbon::parse($date)->betweenIncluded($startDate, $endDate)) {
+                continue;
+            }
+
+            $flows[$date] ??= ['income' => 0.0, 'expense' => 0.0];
+            $flows[$date]['expense'] += (float) $transactionsForInvoice->sum('amount');
+        }
+
+        return $flows;
+    }
+
+    private function getInitialBalance(Carbon $startDate, ?array $accountIds = null, ?int $tagId = null): float
     {
         $query = FinancialTransaction::forAccounts($accountIds)
             ->withoutDrafts()
@@ -561,7 +662,13 @@ class ReportsService
             $query->withoutTransfers();
         }
 
+        $this->applyTagFilter($query, $tagId);
+
         $nonCcBalance = (float) $query->sum(DB::raw("CASE WHEN financial_transactions.type = 'income' THEN amount WHEN financial_transactions.type = 'expense' THEN -amount ELSE 0 END"));
+
+        if ($tagId !== null) {
+            return $nonCcBalance;
+        }
 
         // Add invoice totals that settled (paid_at or due_date) before startDate
         $invoiceBalance = 0.0;
@@ -592,7 +699,7 @@ class ReportsService
         return $nonCcBalance + $invoiceBalance;
     }
 
-    private function getInitialNetWorth(Carbon $startDate, ?array $accountIds = null): float
+    private function getInitialNetWorth(Carbon $startDate, ?array $accountIds = null, ?int $tagId = null): float
     {
         $query = FinancialTransaction::withoutPartialPayments()
             ->withoutDrafts()
@@ -603,7 +710,28 @@ class ReportsService
             $query->withoutTransfers();
         }
 
+        $this->applyTagFilter($query, $tagId);
+
         return (float) $query->sum(DB::raw("CASE WHEN financial_transactions.type = 'income' THEN amount WHEN financial_transactions.type = 'expense' THEN -amount ELSE 0 END"));
+    }
+
+    private function applyTagFilter(Builder $query, ?int $tagId): void
+    {
+        if ($tagId === null) {
+            return;
+        }
+
+        $query->where(function (Builder $query) use ($tagId): void {
+            if ($tagId === 0) {
+                $query->whereDoesntHave('tags')
+                    ->whereDoesntHave('items.tags');
+
+                return;
+            }
+
+            $query->whereHas('tags', fn (Builder $tagQuery) => $tagQuery->whereKey($tagId))
+                ->orWhereHas('items.tags', fn (Builder $tagQuery) => $tagQuery->whereKey($tagId));
+        });
     }
 
     /**
