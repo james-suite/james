@@ -2,6 +2,7 @@
 
 use App\Models\FinancialAccount;
 use App\Models\FinancialRecurrence;
+use App\Models\FinancialTransaction;
 use App\Models\User;
 
 beforeEach(function () {
@@ -38,6 +39,21 @@ it('can view create recurrence page', function () {
     $this->get(route('financial.recurrences.create'))
         ->assertSuccessful()
         ->assertViewIs('finance.recurrences.create');
+});
+
+it('can view a recurrence with its generated transaction history', function () {
+    $recurrence = FinancialRecurrence::factory()->create();
+    $occurrence = FinancialTransaction::factory()->create([
+        'financial_recurrence_id' => $recurrence->id,
+    ]);
+    FinancialTransaction::factory()->create();
+
+    $this->get(route('financial.recurrences.show', $recurrence))
+        ->assertSuccessful()
+        ->assertViewIs('finance.recurrences.show')
+        ->assertViewHas('transactions', function ($transactions) use ($occurrence): bool {
+            return $transactions->pluck('id')->all() === [$occurrence->id];
+        });
 });
 
 it('can store recurrence', function () {

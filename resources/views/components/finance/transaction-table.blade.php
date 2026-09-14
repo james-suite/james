@@ -18,7 +18,7 @@
                 if (!empty($transaction->is_invoice) && $transaction->invoice) {
                     $href = route('financial.cards.invoices.show', [$transaction->invoice->financial_credit_card_id, $transaction->invoice->id]);
                 } elseif (!empty($transaction->is_recurrence) && !empty($transaction->recurrence_id)) {
-                    $href = route('financial.recurrences.edit', $transaction->recurrence_id);
+                    $href = route('financial.recurrences.show', $transaction->recurrence_id);
                 } elseif ($transaction->id) {
                     $href = route('financial.transactions.show', $transaction->id);
                 }

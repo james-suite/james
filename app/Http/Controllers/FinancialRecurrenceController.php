@@ -62,6 +62,22 @@ class FinancialRecurrenceController extends Controller
     }
 
     /**
+     * Display the specified resource and its generated transactions.
+     */
+    public function show(FinancialRecurrence $recurrence): View
+    {
+        $recurrence->load(['financialAccount:id,name', 'financialCreditCard:id,name', 'tags:id,name,color_hex,icon']);
+
+        $transactions = $recurrence->transactions()
+            ->select(['id', 'financial_account_id', 'financial_credit_card_invoice_id', 'type', 'amount', 'description', 'date', 'status', 'installment_current', 'installment_total'])
+            ->with(['account:id,name', 'invoice:id,financial_credit_card_id', 'invoice.creditCard:id,name', 'tags:id,name,color_hex,icon', 'media'])
+            ->latest('date')
+            ->paginate(15);
+
+        return view('finance.recurrences.show', compact('recurrence', 'transactions'));
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(FinancialRecurrenceRequest $request): RedirectResponse
