@@ -19,7 +19,18 @@ beforeEach(function () {
 });
 
 it('can list settlements index (dashboard)', function () {
-    $this->get(route('settlements.index'))->assertSuccessful();
+    $contact = Contact::factory()->create(['name' => 'Contato do Payload']);
+
+    $this->get(route('settlements.index'))
+        ->assertSuccessful()
+        ->assertViewHas('contactOptions', function ($options) use ($contact): bool {
+            return $options->first() === [
+                'id' => $contact->id,
+                'name' => 'Contato do Payload',
+                'net_balance' => 0.0,
+                'group_ids' => [],
+            ];
+        });
 });
 
 it('can list global settlement history', function () {

@@ -49,7 +49,7 @@
         search: '',
         isSearching: false,
         limit: 102,
-        contacts: {{ Js::from($contacts) }},
+        contacts: {{ Js::from($contactOptions) }},
         selectedIds: [],
         visibleMap: {},
         hasMorePages: false,

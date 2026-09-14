@@ -92,6 +92,13 @@ class SettlementController extends Controller
             })
             ->values();
 
+        $contactOptions = $contacts->map(fn (Contact $contact): array => [
+            'id' => $contact->id,
+            'name' => $contact->name,
+            'net_balance' => $contact->net_balance,
+            'group_ids' => $contact->group_ids,
+        ])->values();
+
         $toReceive = round((float) $contacts->sum(fn ($c) => max(0, $c->net_balance)), 2);
         $toPay = round((float) $contacts->sum(fn ($c) => max(0, -$c->net_balance)), 2);
         $netBalance = round($toReceive - $toPay, 2);
@@ -112,7 +119,7 @@ class SettlementController extends Controller
             ->unique()
             ->values();
 
-        return view('settlements.index', compact('contacts', 'toReceive', 'toPay', 'netBalance', 'showArchived', 'groups', 'hasArchived', 'hasHistory', 'hasGroups', 'pixKeys'));
+        return view('settlements.index', compact('contacts', 'contactOptions', 'toReceive', 'toPay', 'netBalance', 'showArchived', 'groups', 'hasArchived', 'hasHistory', 'hasGroups', 'pixKeys'));
     }
 
     /**
