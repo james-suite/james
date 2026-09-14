@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\DB;
 class ReportsService
 {
     /**
+     * @var array<string, Collection<int, FinancialCreditCardInvoice>>
+     */
+    private array $invoiceCache = [];
+
+    /**
      * Loads all report data in a single pass, fetching unified transactions only once.
      *
      * @return array{sankey: array, evolution: array, tags: array, transactions: Collection}
@@ -672,13 +677,8 @@ class ReportsService
 
         // Add invoice totals that settled (paid_at or due_date) before startDate
         $invoiceBalance = 0.0;
-        $invoiceQuery = FinancialCreditCardInvoice::withTotalAmount();
 
-        if (! empty($accountIds)) {
-            $invoiceQuery->whereHas('creditCard', fn ($q) => $q->whereIn('financial_account_id', $accountIds));
-        }
-
-        foreach ($invoiceQuery->get() as $invoice) {
+        foreach ($this->getReportInvoices($accountIds) as $invoice) {
             $invoiceTotal = (float) $invoice->total();
             if ($invoiceTotal <= 0) {
                 continue;
@@ -742,15 +742,9 @@ class ReportsService
      */
     private function buildInvoicePeriodFlows(Carbon $startDate, Carbon $endDate, ?array $accountIds = null): array
     {
-        $query = FinancialCreditCardInvoice::withTotalAmount();
-
-        if (! empty($accountIds)) {
-            $query->whereHas('creditCard', fn ($q) => $q->whereIn('financial_account_id', $accountIds));
-        }
-
         $flows = [];
 
-        foreach ($query->get() as $invoice) {
+        foreach ($this->getReportInvoices($accountIds) as $invoice) {
             $invoiceTotal = (float) $invoice->total();
             if ($invoiceTotal <= 0) {
                 continue;
@@ -774,5 +768,25 @@ class ReportsService
         }
 
         return $flows;
+    }
+
+    /**
+     * @return Collection<int, FinancialCreditCardInvoice>
+     */
+    private function getReportInvoices(?array $accountIds = null): Collection
+    {
+        $cacheKey = empty($accountIds) ? 'all' : implode(',', $accountIds);
+
+        if (isset($this->invoiceCache[$cacheKey])) {
+            return $this->invoiceCache[$cacheKey];
+        }
+
+        $query = FinancialCreditCardInvoice::withTotalAmount();
+
+        if (! empty($accountIds)) {
+            $query->whereHas('creditCard', fn ($q) => $q->whereIn('financial_account_id', $accountIds));
+        }
+
+        return $this->invoiceCache[$cacheKey] = $query->get();
     }
 }
