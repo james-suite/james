@@ -46,6 +46,13 @@ it('renders accessible focus management hooks for transaction modals', function 
         ->assertSee('data-modal-state', false);
 });
 
+it('renders form actions without exposing their Alpine setup as page text', function () {
+    $this->get(route('financial.transactions.create'))
+        ->assertSuccessful()
+        ->assertSee('data-form-id="transaction-form"', false)
+        ->assertDontSee('document.getElementById(" transaction-form', false);
+});
+
 it('filters transactions by a date range including both boundaries', function () {
     FinancialTransaction::factory()->create(['date' => '2026-08-17']);
     $firstInRange = FinancialTransaction::factory()->create(['date' => '2026-08-18']);
