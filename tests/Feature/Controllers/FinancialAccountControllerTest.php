@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\FinancialAccount;
+use App\Models\FinancialCreditCard;
+use App\Models\FinancialRecurrence;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\User;
@@ -123,6 +125,27 @@ it('can soft delete account', function () {
         ->assertRedirect(route('financial.accounts.index'));
 
     $this->assertSoftDeleted($account);
+});
+
+it('blocks deleting an account with active dependencies', function () {
+    $account = FinancialAccount::factory()->create();
+    FinancialCreditCard::factory()->create(['financial_account_id' => $account->id]);
+
+    $this->delete(route('financial.accounts.destroy', $account))
+        ->assertRedirect(route('financial.accounts.show', $account))
+        ->assertSessionHas('error');
+
+    $this->assertNotSoftDeleted($account);
+});
+
+it('blocks deleting an account with a recurrence dependency', function () {
+    $account = FinancialAccount::factory()->create();
+    FinancialRecurrence::factory()->create(['financial_account_id' => $account->id]);
+
+    $this->delete(route('financial.accounts.destroy', $account))
+        ->assertRedirect(route('financial.accounts.show', $account));
+
+    $this->assertNotSoftDeleted($account);
 });
 
 it('can list trashed accounts', function () {

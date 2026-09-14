@@ -193,7 +193,7 @@ class ContactController extends Controller
     {
         $media = $contact->getFirstMedia('avatar');
 
-        if (! $media) {
+        if (! $media || ! is_file($media->getPath())) {
             abort(404);
         }
 
