@@ -48,6 +48,15 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 
     --color-accent: #DAA520;
+    --color-accent-hover: #B8860B;
+    --color-accent-ink: #754C00;
+    --color-brand-100: #FEF3C7;
+    --color-brand-200: #FDE68A;
+    --color-brand-600: #A16207;
+    --color-brand-700: #854D0E;
+    --color-primary-500: #CA8A04;
+    --color-primary-600: #A16207;
+    --color-primary-700: #854D0E;
 
     --text-xxs: 0.625rem; /* 10px */
     --text-xxs--line-height: 0.875rem; /* 14px */

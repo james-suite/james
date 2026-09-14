@@ -60,7 +60,7 @@
                     <x-badge :color="$transaction->status->color()" size="sm">{{ $transaction->status->label() }}</x-badge>
 
                     @if($transaction->type === 'transfer')
-                        <x-badge color="info" size="sm">Transferência</x-badge>
+                        <x-badge color="blue" size="sm">Transferência</x-badge>
                     @endif
                 </div>
             </div>

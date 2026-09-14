@@ -3,7 +3,7 @@
         @if ($unreadCount > 0)
             <form method="POST" action="{{ route('notifications.markAllAsRead') }}">
                 @csrf
-                <x-button type="submit" color="secondary" class="w-full sm:w-auto">
+                <x-button type="submit" color="outline" class="w-full sm:w-auto">
                     <x-heroicon-o-check-badge class="size-5!" />
                     Marcar todas como lidas
                 </x-button>
