@@ -1,3 +1,12 @@
+@php
+    $singleAccountId = $accounts->count() === 1 ? $accounts->first()->id : null;
+    $singleCardId = $cards->count() === 1 ? $cards->first()->id : null;
+    $existingAccountId = isset($recurrence) ? $recurrence->financial_account_id : null;
+    $existingCardId = isset($recurrence) ? $recurrence->financial_credit_card_id : null;
+    $selectedAccountId = old('financial_account_id', $existingAccountId ?? $singleAccountId);
+    $selectedCardId = old('financial_credit_card_id', $existingCardId ?? $singleCardId);
+@endphp
+
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
     <!-- Left Column: Main Data -->
     <div class="lg:col-span-8 flex flex-col gap-4 sm:gap-6 order-last lg:order-first">
@@ -81,7 +90,7 @@
                         <x-form-select name="financial_account_id">
                             <option value="">Selecione uma conta...</option>
                             @foreach($accounts as $account)
-                                <option value="{{ $account->id }}" {{ old('financial_account_id', $recurrence->financial_account_id ?? '') == $account->id ? 'selected' : '' }}>{{ $account->name }}</option>
+                                <option value="{{ $account->id }}" @selected($selectedAccountId == $account->id)>{{ $account->name }}</option>
                             @endforeach
                         </x-form-select>
                     </div>
@@ -89,7 +98,7 @@
                         <x-form-select name="financial_credit_card_id">
                             <option value="">Selecione um cartão...</option>
                             @foreach($cards as $card)
-                                <option value="{{ $card->id }}" {{ old('financial_credit_card_id', $recurrence->financial_credit_card_id ?? '') == $card->id ? 'selected' : '' }}>{{ $card->name }}</option>
+                                <option value="{{ $card->id }}" @selected($selectedCardId == $card->id)>{{ $card->name }}</option>
                             @endforeach
                         </x-form-select>
                     </div>

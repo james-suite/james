@@ -1,3 +1,11 @@
+@php
+    $singleAccountId = $accounts->count() === 1 ? $accounts->first()->id : null;
+    $selectedAccountId = old(
+        'financial_account_id',
+        isset($card) ? ($card->financial_account_id ?? $singleAccountId) : $singleAccountId,
+    );
+@endphp
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pb-6">
     <div class="flex flex-col gap-4 sm:gap-6">
         <x-card>
@@ -7,9 +15,9 @@
                 </div>
                 <div>
                     <x-form-select name="financial_account_id" label="Conta para Pagamento">
-                        <option value="" disabled {{ !isset($card) ? 'selected' : '' }}>Selecione uma conta...</option>
+                        <option value="" disabled @selected(blank($selectedAccountId))>Selecione uma conta...</option>
                         @foreach($accounts as $account)
-                            <option value="{{ $account->id }}" {{ old('financial_account_id', $card->financial_account_id ?? '') == $account->id ? 'selected' : '' }}>
+                            <option value="{{ $account->id }}" @selected($selectedAccountId == $account->id)>
                                 {{ $account->name }}
                             </option>
                         @endforeach
