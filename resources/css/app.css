@@ -229,6 +229,10 @@
         animation: none;
     }
 
+    .animate-shake {
+        animation: none;
+    }
+
     .button-scale {
         transition: none;
     }
