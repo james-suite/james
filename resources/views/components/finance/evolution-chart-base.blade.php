@@ -3,6 +3,7 @@
     'incomeLabel' => 'Receita',
     'expenseLabel' => 'Despesa',
     'heightClass' => 'h-[300px]',
+    'deferred' => false,
 ])
 
 @php
@@ -14,14 +15,15 @@
             || abs((float) data_get($item, 'expense', 0)) > 0.001
             || abs((float) data_get($item, 'future_expense', 0)) > 0.001;
     });
+    $mountChart = $hasChartData || $deferred;
 @endphp
 
-<div class="relative w-full {{ $heightClass }}" @if($hasChartData) role="img" aria-label="Gráfico de evolução financeira" x-data="evolutionChartBase({
+<div class="relative w-full {{ $heightClass }}" @if($mountChart) role="img" aria-label="Gráfico de evolução financeira" x-data="evolutionChartBase({
     data: {{ json_encode($chartPayload) }},
     incomeLabel: '{{ $incomeLabel }}',
     expenseLabel: '{{ $expenseLabel }}'
 })" x-init="initChart()" @endif>
-    @if($hasChartData)
+    @if($mountChart)
         <div x-ref="chartContainer" class="w-full h-full"></div>
     @else
         <div class="flex h-full min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-neutral-50/60 px-4 text-center" role="status">

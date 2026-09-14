@@ -33,7 +33,7 @@
 
     <!-- Chart Container -->
     <div x-ref="chartWrapper">
-        <x-finance.evolution-chart-base heightClass="h-[300px]" />
+        <x-finance.evolution-chart-base heightClass="h-[300px]" deferred />
     </div>
 </x-card>
 

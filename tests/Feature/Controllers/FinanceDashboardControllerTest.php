@@ -17,6 +17,7 @@ it('can view the finance dashboard', function () {
     $this->get(route('financial.dashboard'))
         ->assertSuccessful()
         ->assertViewIs('finance.dashboard')
+        ->assertSee('x-data="evolutionChartBase(', false)
         ->assertDontSee('filterByTag(', false);
 });
 
