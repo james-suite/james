@@ -3,6 +3,7 @@
 use App\Enums\SettlementType;
 use App\Models\Contact;
 use App\Models\FinancialAccount;
+use App\Models\FinancialCreditCard;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\Settlement;
@@ -153,6 +154,28 @@ it('assigns selected tags to a payment made to a contact', function () {
         'financial_taggable_type' => FinancialTransaction::class,
         'is_primary' => false,
     ]);
+});
+
+it('uses only the selected account when both settlement targets are submitted', function () {
+    $contact = Contact::factory()->create();
+    $account = FinancialAccount::factory()->create();
+    $card = FinancialCreditCard::factory()->create();
+
+    $this->post(route('settlements.store', $contact), [
+        'type' => SettlementType::IPaid->value,
+        'amount' => 150,
+        'description' => 'Pagamento em conta',
+        'date' => '2026-08-30',
+        'create_transaction' => true,
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'financial_credit_card_id' => $card->id,
+    ])->assertRedirect(route('settlements.contact.show', $contact));
+
+    $transaction = Settlement::query()->latest('id')->firstOrFail()->financialTransaction;
+
+    expect($transaction->financial_account_id)->toBe($account->id)
+        ->and($transaction->financial_credit_card_invoice_id)->toBeNull();
 });
 
 it('replaces a payment made tag selection when updating a settlement', function () {

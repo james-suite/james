@@ -15,6 +15,16 @@ class StoreSettlementGroupRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->boolean('create_transaction')) {
+            $targetType = $this->input('targetType');
+
+            if ($targetType === 'account') {
+                $this->merge(['financial_credit_card_id' => null]);
+            } elseif ($targetType === 'card') {
+                $this->merge(['financial_account_id' => null]);
+            }
+        }
+
         // Convert comma-formatted amounts to dot notation
         if ($this->has('total_amount') && is_string($this->total_amount)) {
             $this->merge(['total_amount' => str_replace(',', '.', $this->total_amount)]);

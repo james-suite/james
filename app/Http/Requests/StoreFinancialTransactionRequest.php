@@ -15,6 +15,14 @@ class StoreFinancialTransactionRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $targetType = $this->input('targetType');
+
+        if ($targetType === 'account') {
+            $this->merge(['financial_credit_card_id' => null]);
+        } elseif ($targetType === 'card') {
+            $this->merge(['financial_account_id' => null]);
+        }
+
         if ($this->has('amount') && is_string($this->amount)) {
             $this->merge(['amount' => str_replace(',', '.', $this->amount)]);
         }

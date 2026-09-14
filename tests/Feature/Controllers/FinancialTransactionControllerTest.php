@@ -5,6 +5,7 @@ use App\Enums\TransactionStatus;
 use App\Jobs\ScrapeNfceInvoiceJob;
 use App\Models\FinancialAccount;
 use App\Models\FinancialCreditCard;
+use App\Models\FinancialCreditCardInvoice;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\FinancialTransactionItem;
@@ -93,6 +94,29 @@ it('can store transaction', function () {
         'amount' => 125.50,
         'description' => 'Compra no supermercado',
     ]);
+});
+
+it('stores a transaction only on the selected target when both ids are submitted', function () {
+    $account = FinancialAccount::factory()->create();
+    $card = FinancialCreditCard::factory()->create();
+
+    $this->post(route('financial.transactions.store'), [
+        'mode' => 'single',
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'financial_credit_card_id' => $card->id,
+        'type' => 'expense',
+        'amount' => 125.50,
+        'description' => 'Conta selecionada',
+        'date' => now()->format('Y-m-d'),
+        'status' => 'posted',
+    ])->assertRedirect(route('financial.transactions.index'));
+
+    $transaction = FinancialTransaction::query()->latest('id')->firstOrFail();
+
+    expect($transaction->financial_account_id)->toBe($account->id)
+        ->and($transaction->financial_credit_card_invoice_id)->toBeNull()
+        ->and(FinancialCreditCardInvoice::query()->count())->toBe(0);
 });
 
 it('does not assign a primary tag to a transaction created with items', function () {

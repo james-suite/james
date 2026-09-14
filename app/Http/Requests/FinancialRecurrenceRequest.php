@@ -21,6 +21,14 @@ class FinancialRecurrenceRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $targetType = $this->input('targetType');
+
+        if ($targetType === 'account') {
+            $this->merge(['financial_credit_card_id' => null]);
+        } elseif ($targetType === 'card') {
+            $this->merge(['financial_account_id' => null]);
+        }
+
         if ($this->has('amount') && is_string($this->amount)) {
             $this->merge([
                 'amount' => str_replace(',', '.', $this->amount),
@@ -40,6 +48,7 @@ class FinancialRecurrenceRequest extends FormRequest
             'amount' => ['required', 'numeric', 'min:0.01'],
             'type' => ['required', Rule::in(['income', 'expense'])],
             'frequency' => ['required', Rule::in(['monthly', 'yearly'])],
+            'targetType' => ['nullable', Rule::in(['account', 'card'])],
             'financial_account_id' => ['nullable', 'required_without:financial_credit_card_id', 'exists:financial_accounts,id'],
             'financial_credit_card_id' => ['nullable', 'required_without:financial_account_id', 'exists:financial_credit_cards,id', 'prohibits:financial_account_id'],
             'start_date' => ['required', 'date'],

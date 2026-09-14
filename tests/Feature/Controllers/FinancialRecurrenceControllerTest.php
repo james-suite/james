@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\FinancialAccount;
+use App\Models\FinancialCreditCard;
 use App\Models\FinancialRecurrence;
 use App\Models\FinancialTransaction;
 use App\Models\User;
@@ -76,6 +77,27 @@ it('can store recurrence', function () {
         'title' => 'Assinatura Netflix',
         'amount' => 55.90,
     ]);
+});
+
+it('stores a recurrence only on the selected target when both ids are submitted', function () {
+    $account = FinancialAccount::factory()->create();
+    $card = FinancialCreditCard::factory()->create();
+
+    $this->post(route('financial.recurrences.store'), [
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'financial_credit_card_id' => $card->id,
+        'title' => 'Assinatura na conta',
+        'type' => 'expense',
+        'amount' => 55.90,
+        'frequency' => 'monthly',
+        'start_date' => now()->format('Y-m-d'),
+    ])->assertRedirect(route('financial.recurrences.index'));
+
+    $recurrence = FinancialRecurrence::query()->latest('id')->firstOrFail();
+
+    expect($recurrence->financial_account_id)->toBe($account->id)
+        ->and($recurrence->financial_credit_card_id)->toBeNull();
 });
 
 it('can view edit recurrence page', function () {

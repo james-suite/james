@@ -143,7 +143,7 @@
 
                     <div>
                         <div x-show="targetType === 'account'">
-                            <x-form-select name="financial_account_id">
+                            <x-form-select name="financial_account_id" ::disabled="targetType !== 'account'">
                                 <option value="">Selecione uma conta...</option>
                                 @foreach($accounts as $account)
                                     <option value="{{ $account->id }}" @selected($selectedAccountId == $account->id)>{{ $account->name }}</option>
@@ -151,7 +151,7 @@
                             </x-form-select>
                         </div>
                         <div x-show="targetType === 'card'" style="display: none;">
-                            <x-form-select name="financial_credit_card_id">
+                            <x-form-select name="financial_credit_card_id" ::disabled="targetType !== 'card'">
                                 <option value="">Selecione um cartão...</option>
                                 @foreach($cards as $card)
                                     <option value="{{ $card->id }}" @selected($selectedCardId == $card->id)>{{ $card->name }}</option>
