@@ -92,9 +92,9 @@
     </x-slot>
 
     @if($alpineAction)
-        <form :action="{!! $alpineAction !!}" method="POST" class="m-0">
+        <form :action="{!! $alpineAction !!}" method="POST" class="m-0" x-data="{ loading: false }" @submit="loading = true">
     @else
-        <form action="{{ $action }}" method="POST" class="m-0">
+        <form action="{{ $action }}" method="POST" class="m-0" x-data="{ loading: false }" @submit="loading = true">
     @endif
         @csrf
         @method('DELETE')
