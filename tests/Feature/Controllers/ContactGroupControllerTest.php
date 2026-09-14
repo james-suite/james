@@ -21,6 +21,20 @@ it('can list contact groups', function () {
         ->assertViewHas('groups');
 });
 
+it('paginates contact groups while keeping their contact counts', function () {
+    ContactGroup::factory()->count(13)->create();
+
+    $response = $this->actingAs($this->user)
+        ->get(route('contacts.groups.index'))
+        ->assertSuccessful();
+
+    $groups = $response->viewData('groups');
+
+    expect($groups->total())->toBe(13)
+        ->and($groups->count())->toBe(12)
+        ->and($groups->first()->contacts_count)->toBeInt();
+});
+
 it('can display the creation screen', function () {
     $this->actingAs($this->user)
         ->get(route('contacts.groups.create'))
