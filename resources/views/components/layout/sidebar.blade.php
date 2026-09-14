@@ -1,21 +1,59 @@
 @props(['headerBg' => null])
 
-<div x-data="{ open: false }">
+<div
+    x-data="{
+        open: false,
+        isDesktop: window.matchMedia('(min-width: 1024px)').matches,
+        init() {
+            window.matchMedia('(min-width: 1024px)').addEventListener('change', (event) => {
+                this.isDesktop = event.matches;
+                if (event.matches) {
+                    this.open = false;
+                }
+            });
+        },
+        openMenu() {
+            this.open = true;
+            this.$nextTick(() => this.$refs.sidebar.querySelector('nav a')?.focus());
+        },
+        closeMenu() {
+            if (this.isDesktop || !this.open) {
+                return;
+            }
+
+            this.open = false;
+            this.$nextTick(() => this.$refs.menuButton?.focus());
+        },
+    }"
+    x-effect="document.documentElement.classList.toggle('t-sidebar-open', open && !isDesktop)"
+    @keydown.escape.window="closeMenu()"
+>
     <aside
-        class="fixed top-0 left-0 h-screen w-64 border-e bg-neutral-100 border-neutral-300 p-4 flex flex-col gap-4 z-40 transition-transform motion-duration-fast motion-ease-smooth-out lg:translate-x-0"
-        :class="{ '-translate-x-full': !open }" x-cloak>
+        x-ref="sidebar"
+        id="main-navigation"
+        class="fixed top-0 left-0 z-40 flex h-screen w-64 flex-col gap-4 border-e border-neutral-300 bg-neutral-100 p-4 transition-transform motion-duration-fast motion-ease-smooth-out lg:translate-x-0"
+        :class="{ '-translate-x-full': !open && !isDesktop }"
+        :aria-hidden="(!open && !isDesktop).toString()"
+        :inert="!open && !isDesktop"
+        x-show="open || isDesktop"
+        x-cloak
+    >
         <div class="flex items-center">
             <a href="{{ route('dashboard') }}">
                 <x-app-logo />
             </a>
 
-            <button @click="open = !open"
-                class="ms-auto lg:hidden cursor-pointer p-1 rounded-md hover:bg-neutral-200">
+            <button
+                type="button"
+                class="ms-auto cursor-pointer rounded-md p-1 hover:bg-neutral-200 lg:hidden"
+                aria-label="Fechar menu"
+                @click="closeMenu()"
+            >
                 <x-heroicon-o-x-mark class="w-6 h-6" />
             </button>
         </div>
 
-        <nav class="flex flex-col min-h-auto space-y-[2px]">
+        <nav class="flex min-h-auto flex-col space-y-0.5" @click="if (!isDesktop) closeMenu()">
             {{ $slot }}
         </nav>
 
@@ -63,17 +101,25 @@
 
     </aside>
 
-    <div class="fixed inset-0 bg-black/10 z-30 lg:hidden" x-cloak x-show="open"
+    <div class="fixed inset-0 z-30 bg-black/10 lg:hidden" x-cloak x-show="open && !isDesktop"
         x-transition:enter="transition-opacity motion-duration-fast motion-ease-smooth-out"
         x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100"
         x-transition:leave="transition-opacity motion-duration-quick motion-ease-smooth-out"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        @click="open = false"></div>
+        @click="closeMenu()"></div>
 
     <header class="flex items-center px-6 w-full min-h-14 lg:hidden {{ $headerBg }}">
-        <button class="cursor-pointer rounded-lg p-1 hover:bg-neutral-200" @click="open = !open">
+        <button
+            x-ref="menuButton"
+            type="button"
+            class="cursor-pointer rounded-lg p-1 hover:bg-neutral-200"
+            aria-label="Abrir menu"
+            aria-controls="main-navigation"
+            :aria-expanded="open.toString()"
+            @click="open ? closeMenu() : openMenu()"
+        >
             <x-heroicon-o-bars-3 class="w-6 h-6" />
         </button>
 
