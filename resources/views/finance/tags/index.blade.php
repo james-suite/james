@@ -17,7 +17,7 @@
                 @csrf
                 <p class="mb-4 text-sm text-neutral-600">Escolha as categorias que fazem sentido para a sua organização. Você pode editar cada uma depois.</p>
 
-                <div class="grid max-h-80 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                <div class="scroll-fade-y grid max-h-80 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                     @foreach ($availableDefaultTags as $tag)
                         <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-neutral-200 px-3 py-2 transition-colors hover:border-accent hover:bg-accent/5">
                             <input type="checkbox" name="tags[]" value="{{ $tag['name'] }}" class="size-4 rounded border-neutral-300 text-accent focus:ring-accent" checked>

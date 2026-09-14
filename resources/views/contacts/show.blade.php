@@ -49,7 +49,7 @@
         <x-card class="h-full flex flex-col">
             <h3 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-6 shrink-0">Telefones</h3>
             @if(!empty($contact->phones))
-                <div class="overflow-y-auto max-h-[300px] pr-2 -mr-2">
+                <div class="scroll-fade-y overflow-y-auto max-h-[300px] pr-2 -mr-2">
                     <div class="divide-y divide-neutral-100">
                         @foreach($contact->phones as $phone)
                             @php
@@ -71,7 +71,7 @@
         <x-card class="h-full flex flex-col">
             <h3 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-6 shrink-0">E-mails</h3>
             @if(!empty($contact->emails))
-                <div class="overflow-y-auto max-h-[300px] pr-2 -mr-2">
+                <div class="scroll-fade-y overflow-y-auto max-h-[300px] pr-2 -mr-2">
                     <div class="divide-y divide-neutral-100">
                         @foreach($contact->emails as $email)
                             @php
@@ -118,7 +118,7 @@
             <x-modal name="sync-groups" :title="'Grupos de ' . $contact->name" confirmVariant="">
                 <form action="{{ route('contacts.groups.sync', $contact) }}" method="POST">
                     @csrf
-                    <div class="space-y-2 mb-6 max-h-[400px] overflow-y-auto p-1">
+                    <div class="scroll-fade-y space-y-2 mb-6 max-h-[400px] overflow-y-auto p-1">
                         @forelse($allGroups as $group)
                             <label class="flex items-center gap-3 p-3 rounded-lg border border-neutral-200 hover:bg-neutral-50 cursor-pointer transition-colors">
                                 <input type="checkbox" name="group_ids[]" value="{{ $group->id }}" 
