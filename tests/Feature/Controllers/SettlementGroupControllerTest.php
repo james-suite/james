@@ -3,6 +3,7 @@
 use App\Models\Contact;
 use App\Models\FinancialAccount;
 use App\Models\FinancialCreditCard;
+use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\Settlement;
 use App\Models\SettlementGroup;
@@ -62,6 +63,10 @@ it('can store a settlement group', function () {
 });
 
 it('uses only the selected account when both group transaction targets are submitted', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::REEMBOLSO_ID,
+        'name' => 'Reembolso',
+    ]);
     $contact = Contact::factory()->create();
     $account = FinancialAccount::factory()->create();
     $card = FinancialCreditCard::factory()->create();

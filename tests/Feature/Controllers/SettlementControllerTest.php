@@ -168,6 +168,10 @@ it('assigns selected tags to a payment made to a contact', function () {
 });
 
 it('uses only the selected account when both settlement targets are submitted', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::REEMBOLSO_ID,
+        'name' => 'Reembolso',
+    ]);
     $contact = Contact::factory()->create();
     $account = FinancialAccount::factory()->create();
     $card = FinancialCreditCard::factory()->create();

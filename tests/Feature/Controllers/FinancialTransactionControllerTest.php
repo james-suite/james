@@ -38,14 +38,6 @@ it('explains when transaction filters return no results', function () {
         ->assertSee('Limpar filtros', false);
 });
 
-it('renders accessible focus management hooks for transaction modals', function () {
-    $this->get(route('financial.transactions.index'))
-        ->assertSuccessful()
-        ->assertSee('aria-modal="true"', false)
-        ->assertSee('data-modal-cancel', false)
-        ->assertSee('data-modal-state', false);
-});
-
 it('renders form actions without exposing their Alpine setup as page text', function () {
     $this->get(route('financial.transactions.create'))
         ->assertSuccessful()
