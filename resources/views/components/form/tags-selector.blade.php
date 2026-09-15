@@ -230,7 +230,7 @@
                             <x-heroicon-o-plus-circle class="size-5" />
                             Criar nova tag
                         </a>
-                        <x-button type="button" @click="closeModal()" color="accent" class="w-full sm:w-auto">
+                        <x-button type="button" @click="closeModal()" class="w-full sm:w-auto">
                             Concluir Seleção
                         </x-button>
                     </div>

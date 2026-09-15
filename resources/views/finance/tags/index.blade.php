@@ -29,7 +29,7 @@
 
                 <div class="mt-6 flex flex-col-reverse gap-3 border-t border-neutral-100 pt-4 sm:flex-row sm:justify-end">
                     <x-button type="button" color="outline" @click="$dispatch('modal-close', 'default-tags-modal')">Cancelar</x-button>
-                    <x-button type="submit" color="accent">
+                    <x-button type="submit">
                         <x-heroicon-o-plus class="size-4" />
                         Adicionar selecionadas
                     </x-button>
