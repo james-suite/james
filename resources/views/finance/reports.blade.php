@@ -1,17 +1,113 @@
 <x-layouts.financial>
+    @php
+        $hasReportTagFilter = $selectedTagId !== null;
+        $clearTagUrl = route('financial.reports', array_filter([
+            'period' => $period,
+            'account' => $accountId,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+        ], fn ($value): bool => $value !== null && $value !== ''));
+    @endphp
+
     <x-page-header title="Relatórios Financeiros" icon="heroicon-o-chart-pie"></x-page-header>
 
-    <div class="lg:hidden">
-        <x-card class="mx-auto max-w-md text-center">
-            <div class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                <x-heroicon-o-computer-desktop class="size-7" />
+    <div class="space-y-4 pb-6 lg:hidden">
+        <form action="{{ route('financial.reports') }}" method="GET" x-data="{ period: @js($period), loading: false }" @submit="loading = true">
+            <x-card>
+                <div class="grid gap-4">
+                    <x-form-select name="period" label="Período" x-model="period">
+                        <option value="this_month">Este mês</option>
+                        <option value="last_month">Mês passado</option>
+                        <option value="last_3m">Últimos 3 meses</option>
+                        <option value="last_6m">Últimos 6 meses</option>
+                        <option value="this_year">Este ano</option>
+                        <option value="next_month">Próximo mês</option>
+                        <option value="next_6m">Próximos 6 meses</option>
+                        <option value="next_12m">Próximos 12 meses</option>
+                        <option value="all_time">Todo o período</option>
+                        <option value="until_today">Até hoje</option>
+                        <option value="custom">Personalizado</option>
+                    </x-form-select>
+
+                    <x-form-select name="account" label="Conta">
+                        <option value="">Todas as contas</option>
+                        @foreach ($accounts as $account)
+                            <option value="{{ $account->id }}" @selected($accountId == $account->id)>{{ $account->name }}</option>
+                        @endforeach
+                    </x-form-select>
+
+                    <div x-show="period === 'custom'" x-cloak class="grid grid-cols-2 gap-3">
+                        <x-form-input name="startDate" label="Início" type="date" :value="$startDate" />
+                        <x-form-input name="endDate" label="Fim" type="date" :value="$endDate" />
+                    </div>
+
+                    <x-button type="submit" class="w-full justify-center">
+                        <x-heroicon-o-funnel class="size-4" />
+                        Atualizar relatório
+                    </x-button>
+                </div>
+            </x-card>
+        </form>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <x-card class="p-4">
+                <p class="text-sm font-medium text-neutral-500">Receitas</p>
+                <p class="mt-1 text-xl font-bold text-green-600">+ {{ formatCurrency($summary['income']) }}</p>
+            </x-card>
+            <x-card class="p-4">
+                <p class="text-sm font-medium text-neutral-500">Despesas</p>
+                <p class="mt-1 text-xl font-bold text-red-600">- {{ formatCurrency($summary['expense']) }}</p>
+            </x-card>
+            <x-card class="p-4">
+                <p class="text-sm font-medium text-neutral-500">Resultado</p>
+                <p class="mt-1 text-xl font-bold {{ $summary['balance'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                    {{ $summary['balance'] >= 0 ? '+' : '-' }} {{ formatCurrency(abs($summary['balance'])) }}
+                </p>
+            </x-card>
+        </div>
+
+        <x-card>
+            <div class="mb-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-neutral-900">Principais categorias</h2>
+                    <p class="mt-1 text-sm text-neutral-500">Toque em uma categoria para filtrar o relatório.</p>
+                </div>
+                <x-heroicon-o-tag class="size-5 text-neutral-400" />
             </div>
-            <h2 class="mt-5 text-lg font-bold text-neutral-900">Relatórios disponíveis no computador</h2>
-            <p class="mt-2 text-sm leading-6 text-neutral-500">
-                Para visualizar os gráficos e analisar os relatórios financeiros, acesse esta página pelo computador.
-            </p>
-            <x-back-button fallback="{{ route('financial.dashboard') }}" class="mt-6 w-full justify-center" />
+
+            <div class="divide-y divide-neutral-100">
+                @forelse ($mobileCategories as $item)
+                    <a
+                        href="{{ route('financial.reports', ['period' => $period, 'account' => $accountId, 'startDate' => $startDate, 'endDate' => $endDate, 'tag_id' => $item['id']]) }}"
+                        class="flex min-h-11 items-center justify-between gap-3 py-3 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:ring-inset"
+                    >
+                        <span class="flex min-w-0 items-center gap-2">
+                            <x-dynamic-component :component="$item['icon']" class="size-4 shrink-0" style="color: {{ $item['color'] }}" />
+                            <span class="truncate font-medium text-neutral-900">{{ $item['name'] }}</span>
+                        </span>
+                        <span class="shrink-0 font-semibold {{ $item['type'] === 'expense' ? 'text-red-600' : 'text-green-600' }}">
+                            {{ $item['type'] === 'expense' ? '-' : '+' }} {{ formatCurrency($item['value']) }}
+                        </span>
+                    </a>
+                @empty
+                    <p class="py-4 text-sm text-neutral-500">Nenhuma movimentação no período.</p>
+                @endforelse
+            </div>
         </x-card>
+
+        <section aria-labelledby="mobile-report-transactions">
+            <div class="mb-4">
+                <h2 id="mobile-report-transactions" class="text-lg font-bold text-neutral-900">Lançamentos recentes</h2>
+                <p class="mt-1 text-sm text-neutral-500">Os cinco últimos lançamentos do período selecionado.</p>
+            </div>
+            <x-finance.transaction-table
+                :transactions="$transactions->getCollection()->take(5)"
+                :empty-title="$hasReportTagFilter ? 'Nenhuma transação corresponde a esta tag' : 'Nenhuma transação encontrada'"
+                :empty-description="$hasReportTagFilter ? 'Remova o filtro de tag para voltar a ver todos os lançamentos do período.' : 'Não há transações disponíveis no momento.'"
+                :empty-action-text="$hasReportTagFilter ? 'Remover filtro' : null"
+                :empty-action-route="$hasReportTagFilter ? $clearTagUrl : null"
+            />
+        </section>
     </div>
 
     <div class="hidden lg:block pb-2" x-data="reportsPage()" x-init="initCharts()">
@@ -94,9 +190,17 @@
         <!-- Sankey Chart -->
         <x-card class="hidden lg:block mb-6">
             <h3 class="text-lg font-bold text-neutral-900 mb-4">Fluxo de Caixa</h3>
-            <div class="relative w-full h-[400px]">
-                <div class="w-full h-full" x-ref="chartSankey"></div>
-            </div>
+            @if(count($sankey['links'] ?? []) > 0)
+                <div class="relative w-full h-[400px]" role="img" aria-label="Diagrama do fluxo de caixa">
+                    <div class="w-full h-full" x-ref="chartSankey"></div>
+                </div>
+            @else
+                <div class="flex h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-neutral-50/60 px-4 text-center" role="status">
+                    <x-heroicon-o-arrows-right-left class="mb-2 size-10 text-neutral-300" />
+                    <p class="text-sm font-medium text-neutral-600">Sem fluxo para os filtros escolhidos</p>
+                    <p class="mt-1 text-xs text-neutral-500">Ajuste o período, a conta ou a tag para visualizar o diagrama.</p>
+                </div>
+            @endif
         </x-card>
 
         <!-- Evolution Chart -->
@@ -169,6 +273,9 @@
         Alpine.data('reportsPage', () => ({
             period: @json($period),
             selectedTagId: @js($selectedTagId),
+            echarts: null,
+            sankeyChart: null,
+            resizeHandler: null,
 
             filterByTag(tagId) {
                 const url = new URL(window.location.href);
@@ -198,20 +305,25 @@
                 this.$root.querySelector('form').submit();
             },
 
-            initCharts() {
-                if (!window.echarts) {
-                    console.error('ECharts not loaded.');
+            async initCharts() {
+                if (!this.$root.offsetParent || !this.$refs.chartSankey) {
                     return;
                 }
 
+                this.echarts = await window.loadEcharts();
                 this.renderSankey();
             },
 
+            destroy() {
+                window.removeEventListener('resize', this.resizeHandler);
+                this.sankeyChart?.dispose();
+            },
+
             renderSankey() {
-                const chart = window.echarts.init(this.$refs.chartSankey);
+                this.sankeyChart = this.echarts.init(this.$refs.chartSankey);
                 const data = @json($sankey);
 
-                chart.setOption({
+                this.sankeyChart.setOption({
                     tooltip: { trigger: 'item', triggerOn: 'mousemove' },
                     series: [{
                         type: 'sankey',
@@ -223,7 +335,8 @@
                     }]
                 });
 
-                window.addEventListener('resize', () => chart.resize());
+                this.resizeHandler = () => this.sankeyChart?.resize();
+                window.addEventListener('resize', this.resizeHandler);
             }
         }));
     });

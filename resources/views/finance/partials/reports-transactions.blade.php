@@ -1,4 +1,10 @@
-<x-finance.transaction-table :transactions="$transactions" />
+<x-finance.transaction-table
+    :transactions="$transactions"
+    :empty-title="$hasReportTagFilter ? 'Nenhuma transação corresponde a esta tag' : 'Nenhuma transação encontrada'"
+    :empty-description="$hasReportTagFilter ? 'Remova o filtro de tag para voltar a ver todos os lançamentos do período.' : 'Não há transações disponíveis no momento.'"
+    :empty-action-text="$hasReportTagFilter ? 'Remover filtro' : null"
+    :empty-action-route="$hasReportTagFilter ? $clearTagUrl : null"
+/>
 
 @if($transactions->hasPages())
     <div class="mt-4">

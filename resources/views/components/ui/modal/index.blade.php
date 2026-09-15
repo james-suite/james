@@ -16,11 +16,27 @@
         default => 'sm:max-w-lg', // md
     };
     $hasIcon = in_array($confirmVariant, ['danger', 'info', 'success', 'warning']);
+    $modalId = 'modal-' . md5($name);
+    $titleId = $modalId . '-title';
+    $descriptionId = $modalId . '-description';
 @endphp
 
 <div class="contents"
      x-data="{
          open: false,
+         previouslyFocused: null,
+         openModal() {
+             if (this.open) {
+                 return;
+             }
+
+             this.previouslyFocused = document.activeElement;
+             this.open = true;
+
+             this.$nextTick(() => {
+                 this.focusInitialElement();
+             });
+         },
          closeModal() {
              if (! this.open) {
                  return;
@@ -28,20 +44,58 @@
 
              this.open = false;
              window.dispatchEvent(new CustomEvent('modal-closed', { detail: @js($name) }));
+
+             if (
+                 this.previouslyFocused instanceof HTMLElement
+                 && document.contains(this.previouslyFocused)
+                 && ! this.previouslyFocused.hasAttribute('disabled')
+             ) {
+                 this.previouslyFocused.focus();
+             }
+         },
+         focusInitialElement() {
+             const preferred = @if($confirmVariant === 'danger') this.$refs.panel.querySelector('[data-modal-cancel]:not([disabled])') @else null @endif;
+             const autofocus = this.$refs.panel.querySelector('[autofocus]:not([disabled])');
+             const focusable = this.focusableElements();
+             const target = autofocus ?? preferred ?? focusable[0] ?? this.$refs.panel;
+
+             target.focus({ preventScroll: true });
+         },
+         focusableElements() {
+             return [...this.$refs.panel.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')]
+                .filter((element) => element.getAttribute('tabindex') !== '-1')
+                .filter((element) => ! element.hasAttribute('disabled'))
+                .filter((element) => element.offsetParent !== null);
+         },
+         trapFocus(event) {
+             const focusable = this.focusableElements();
+             if (focusable.length === 0) {
+                 event.preventDefault();
+                 this.$refs.panel.focus();
+
+                 return;
+             }
+
+             const currentIndex = focusable.indexOf(document.activeElement);
+             const nextIndex = event.shiftKey
+                 ? (currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1)
+                 : (currentIndex === -1 || currentIndex === focusable.length - 1 ? 0 : currentIndex + 1);
+
+             event.preventDefault();
+             focusable[nextIndex].focus();
          }
      }"
-     x-effect="document.documentElement.classList.toggle('t-modal-open', open)"
-     @modal-open.window="if ($event.detail === '{{ $name }}') open = true"
+     x-bind:data-modal-state="open ? 'open' : 'closed'"
+     x-effect="document.documentElement.classList.toggle('t-modal-open', document.querySelectorAll('[data-modal-state=open]').length > 0)"
+     @modal-open.window="if ($event.detail === '{{ $name }}') openModal()"
      @modal-close.window="if ($event.detail === '{{ $name }}') closeModal()"
      @keydown.escape.window="closeModal()"
+     @focusin.window="if (open && $refs.panel && !$refs.panel.contains($event.target)) { focusInitialElement(); }"
 >
 
     <template x-teleport="body">
         <div class="t-modal-scroll fixed inset-0 z-50 w-screen overflow-y-auto"
              style="display: none;"
-             aria-labelledby="modal-title" 
-             role="dialog" 
-             aria-modal="true"
              x-show="open">
             
 
@@ -57,8 +111,18 @@
                  @click="closeModal()"></div>
 
 
-            <div class="relative z-10 flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                <div class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full {{ $maxWidth }}"
+            <div class="relative z-10 flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0"
+                 @click.self="closeModal()">
+                <div
+                     x-ref="panel"
+                     class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full {{ $maxWidth }}"
+                     id="{{ $modalId }}"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="{{ $titleId }}"
+                     @if ($message || isset($content)) aria-describedby="{{ $descriptionId }}" @endif
+                     tabindex="-1"
+                     @keydown.tab.prevent="trapFocus($event)"
                      x-show="open"
                      x-transition:enter="motion-ease-smooth-out motion-duration-fast"
                      x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:motion-scale-large"
@@ -87,10 +151,10 @@
                                 </div>
                             @endif
                             <div class="{{ $hasIcon ? 'mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left' : '' }} w-full">
-                                <h3 class="text-base font-semibold leading-6 text-neutral-900 {{ $hasIcon ? '' : 'mb-4' }}" id="modal-title">
+                                <h3 class="text-base font-semibold leading-6 text-neutral-900 {{ $hasIcon ? '' : 'mb-4' }}" id="{{ $titleId }}">
                                     {{ $title }}
                                 </h3>
-                                <div class="{{ $hasIcon ? 'mt-2' : '' }}">
+                                <div class="{{ $hasIcon ? 'mt-2' : '' }}" id="{{ $descriptionId }}">
                                     @if($message)
                                         <p class="text-sm text-neutral-500 mb-4">
                                             {{ $message }}
@@ -116,6 +180,7 @@
                             <x-button type="button" 
                                       color="outline"
                                       class="mt-3 w-full sm:mt-0 sm:w-auto"
+                                      data-modal-cancel
                                       @click="closeModal(); $dispatch('modal-cancel')">
                                 Cancelar
                             </x-button>

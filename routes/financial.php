@@ -28,6 +28,7 @@ Route::prefix('financial')->name('financial.')->group(function () {
     ]);
 
     // Tags
+    Route::post('/tags/defaults', [FinancialTagController::class, 'storeDefaults'])->name('tags.defaults');
     Route::resource('tags', FinancialTagController::class)->parameters([
         'tags' => 'financialTag',
     ]);
@@ -47,6 +48,8 @@ Route::prefix('financial')->name('financial.')->group(function () {
     Route::patch('/transactions/{transaction}/restore', [FinancialTransactionController::class, 'restore'])->name('transactions.restore')->withTrashed();
     Route::delete('/transactions/{transaction}/force', [FinancialTransactionController::class, 'forceDestroy'])->name('transactions.forceDestroy')->withTrashed();
     Route::post('transactions/transfer', [FinancialTransactionController::class, 'storeTransfer'])->name('transactions.transfer.store');
+    Route::get('transactions/{transaction}/transfer/edit', [FinancialTransactionController::class, 'editTransfer'])->name('transactions.transfer.edit');
+    Route::put('transactions/{transaction}/transfer', [FinancialTransactionController::class, 'updateTransfer'])->name('transactions.transfer.update');
     Route::post('transactions/import-nfce', [FinancialTransactionController::class, 'importNfce'])->name('transactions.nfce.import');
     Route::get('transactions/import-nfce/retry', [FinancialTransactionController::class, 'retryNfceImport'])->name('transactions.nfce.retry')->middleware('signed');
     Route::resource('transactions', FinancialTransactionController::class)->parameters([

@@ -16,7 +16,9 @@ beforeEach(function () {
 it('can view the finance dashboard', function () {
     $this->get(route('financial.dashboard'))
         ->assertSuccessful()
-        ->assertViewIs('finance.dashboard');
+        ->assertViewIs('finance.dashboard')
+        ->assertSee('x-data="evolutionChartBase(', false)
+        ->assertDontSee('filterByTag(', false);
 });
 
 it('applies the investment filter consistently to every dashboard widget', function () {

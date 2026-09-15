@@ -7,7 +7,9 @@ use App\Models\FinancialCreditCardInvoice;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Services\ReportsService;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 it('calculates net worth evolution correctly based on accrual accounting (competência)', function () {
     $account = FinancialAccount::factory()->create();
@@ -162,4 +164,33 @@ it('excludes drafts from reports', function () {
     expect($data['transactions']->modelKeys())->toBe([$posted->id])
         ->and($data['tableTransactions'])->toHaveCount(1)
         ->and(last($data['netWorthEvolution'])['value'])->toEqual(100.0);
+});
+
+it('reuses invoice totals while building report cash flows', function () {
+    $account = FinancialAccount::factory()->create();
+    $card = FinancialCreditCard::factory()->create(['financial_account_id' => $account->id]);
+
+    FinancialCreditCardInvoice::factory()->create([
+        'financial_credit_card_id' => $card->id,
+        'reference_month' => Carbon::parse('2026-07-01'),
+        'closing_date' => Carbon::parse('2026-07-25'),
+        'due_date' => Carbon::parse('2026-08-05'),
+    ]);
+
+    $aggregateQueryCount = 0;
+
+    DB::listen(function (QueryExecuted $query) use (&$aggregateQueryCount): void {
+        if (str_contains($query->sql, 'from "financial_credit_card_invoices"')
+            && str_contains($query->sql, 'COALESCE(SUM')) {
+            $aggregateQueryCount++;
+        }
+    });
+
+    (new ReportsService)->getAll(
+        Carbon::parse('2026-08-01'),
+        Carbon::parse('2026-08-31'),
+        [$account->id],
+    );
+
+    expect($aggregateQueryCount)->toBe(1);
 });

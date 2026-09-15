@@ -133,6 +133,18 @@ class FinancialAccountController extends Controller
      */
     public function destroy(FinancialAccount $financialAccount): RedirectResponse
     {
+        $dependencies = collect([
+            'cartões de crédito' => $financialAccount->creditCards()->count(),
+            'recorrências' => $financialAccount->recurrences()->count(),
+            'transações' => $financialAccount->transactions()->count(),
+        ])->filter();
+
+        if ($dependencies->isNotEmpty()) {
+            return redirect()
+                ->route('financial.accounts.show', $financialAccount)
+                ->with('error', 'Não é possível excluir esta conta enquanto ela possuir '.$dependencies->keys()->implode(', ').' vinculados. Resolva esses vínculos primeiro.');
+        }
+
         $financialAccount->delete();
 
         return redirect()
@@ -206,9 +218,9 @@ class FinancialAccountController extends Controller
      */
     public function forceDestroy(FinancialAccount $financialAccount): RedirectResponse
     {
-        if ($financialAccount->creditCards()->exists() ||
-            $financialAccount->transactions()->exists() ||
-            $financialAccount->recurrences()->exists()) {
+        if ($financialAccount->creditCards()->withTrashed()->exists() ||
+            $financialAccount->transactions()->withTrashed()->exists() ||
+            $financialAccount->recurrences()->withTrashed()->exists()) {
             return redirect()
                 ->route('financial.accounts.trashed')
                 ->with('error', 'Não é possível excluir permanentemente esta conta pois ela possui cartões de crédito, transações ou recorrências vinculadas. Remova os vínculos primeiro.');

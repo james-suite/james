@@ -5,6 +5,7 @@ use App\Enums\TransactionStatus;
 use App\Jobs\ScrapeNfceInvoiceJob;
 use App\Models\FinancialAccount;
 use App\Models\FinancialCreditCard;
+use App\Models\FinancialCreditCardInvoice;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\FinancialTransactionItem;
@@ -28,6 +29,36 @@ it('can list transactions', function () {
     $this->get(route('financial.transactions.index'))
         ->assertSuccessful()
         ->assertViewIs('finance.transactions.index');
+});
+
+it('explains when transaction filters return no results', function () {
+    $this->get(route('financial.transactions.index', ['search' => 'sem resultado']))
+        ->assertSuccessful()
+        ->assertSee('Nenhuma transação corresponde aos filtros', false)
+        ->assertSee('Limpar filtros', false);
+});
+
+it('renders form actions without exposing their Alpine setup as page text', function () {
+    $this->get(route('financial.transactions.create'))
+        ->assertSuccessful()
+        ->assertSee('data-form-id="transaction-form"', false)
+        ->assertDontSee('document.getElementById(" transaction-form', false);
+});
+
+it('filters transactions by a date range including both boundaries', function () {
+    FinancialTransaction::factory()->create(['date' => '2026-08-17']);
+    $firstInRange = FinancialTransaction::factory()->create(['date' => '2026-08-18']);
+    $lastInRange = FinancialTransaction::factory()->create(['date' => '2026-08-20']);
+    FinancialTransaction::factory()->create(['date' => '2026-08-21']);
+
+    $this->get(route('financial.transactions.index', [
+        'date_start' => '2026-08-18',
+        'date_end' => '2026-08-20',
+    ]))
+        ->assertSuccessful()
+        ->assertViewHas('transactions', function ($transactions) use ($firstInRange, $lastInRange): bool {
+            return $transactions->pluck('id')->sort()->values()->all() === collect([$firstInRange->id, $lastInRange->id])->sort()->values()->all();
+        });
 });
 
 it('filters transactions by tags attached directly or to an item', function () {
@@ -77,6 +108,46 @@ it('can store transaction', function () {
         'amount' => 125.50,
         'description' => 'Compra no supermercado',
     ]);
+});
+
+it('stores a transaction only on the selected target when both ids are submitted', function () {
+    $account = FinancialAccount::factory()->create();
+    $card = FinancialCreditCard::factory()->create();
+
+    $this->post(route('financial.transactions.store'), [
+        'mode' => 'single',
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'financial_credit_card_id' => $card->id,
+        'type' => 'expense',
+        'amount' => 125.50,
+        'description' => 'Conta selecionada',
+        'date' => now()->format('Y-m-d'),
+        'status' => 'posted',
+    ])->assertRedirect(route('financial.transactions.index'));
+
+    $transaction = FinancialTransaction::query()->latest('id')->firstOrFail();
+
+    expect($transaction->financial_account_id)->toBe($account->id)
+        ->and($transaction->financial_credit_card_invoice_id)->toBeNull()
+        ->and(FinancialCreditCardInvoice::query()->count())->toBe(0);
+});
+
+it('rejects income installments on credit cards', function () {
+    $card = FinancialCreditCard::factory()->create();
+
+    $this->post(route('financial.transactions.store'), [
+        'mode' => 'installment',
+        'targetType' => 'card',
+        'financial_credit_card_id' => $card->id,
+        'type' => 'income',
+        'amount' => 300,
+        'description' => 'Receita parcelada',
+        'date' => now()->format('Y-m-d'),
+        'installments' => 3,
+    ])->assertSessionHasErrors('type');
+
+    expect(FinancialTransaction::query()->count())->toBe(0);
 });
 
 it('does not assign a primary tag to a transaction created with items', function () {
@@ -634,6 +705,50 @@ it('can store a transfer between accounts', function () {
         'type' => 'income',
         'amount' => 500.00,
     ]);
+});
+
+it('edits both sides of a transfer atomically', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::TRANSFERENCIA_ID,
+        'name' => 'Transferência',
+        'is_protected' => true,
+    ]);
+
+    $accountFrom = FinancialAccount::factory()->create();
+    $accountTo = FinancialAccount::factory()->create();
+    $newAccountFrom = FinancialAccount::factory()->create();
+    $newAccountTo = FinancialAccount::factory()->create();
+    [$expense, $income] = FinancialTransaction::createTransfer(
+        $accountFrom,
+        $accountTo,
+        500,
+        Carbon::parse('2026-08-17'),
+        'Transferência original',
+    );
+
+    $this->get(route('financial.transactions.transfer.edit', $income))
+        ->assertSuccessful()
+        ->assertViewIs('finance.transactions.transfer-edit');
+
+    $this->put(route('financial.transactions.transfer.update', $income), [
+        'from_account_id' => $newAccountFrom->id,
+        'to_account_id' => $newAccountTo->id,
+        'amount' => 650,
+        'date' => '2026-08-18',
+        'description' => 'Transferência atualizada',
+        'status' => TransactionStatus::Posted->value,
+    ])->assertRedirect(route('financial.transactions.show', $income));
+
+    $expense->refresh();
+    $income->refresh();
+
+    expect($expense->financial_account_id)->toBe($newAccountFrom->id)
+        ->and($expense->amount)->toBe('650.00')
+        ->and($expense->description)->toBe('Transferência atualizada')
+        ->and($income->financial_account_id)->toBe($newAccountTo->id)
+        ->and($income->amount)->toBe('650.00')
+        ->and($income->description)->toBe('Transferência atualizada')
+        ->and($expense->transfer_pair_id)->toBe($income->transfer_pair_id);
 });
 
 it('uses the selected fee tag when storing a transfer', function () {

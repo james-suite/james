@@ -46,4 +46,10 @@
             </div>
         @endforelse
     </div>
+
+    @if ($groups->hasPages())
+        <div class="mt-6 pb-6">
+            {{ $groups->links() }}
+        </div>
+    @endif
 </x-layouts.app>

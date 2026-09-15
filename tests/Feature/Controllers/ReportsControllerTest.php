@@ -12,7 +12,11 @@ beforeEach(function () {
 it('can view reports page', function () {
     $this->get(route('financial.reports'))
         ->assertSuccessful()
-        ->assertViewIs('finance.reports');
+        ->assertViewIs('finance.reports')
+        ->assertSee('type="button"', false)
+        ->assertSee('filterByTag(', false)
+        ->assertSee('Sem movimentações para exibir', false)
+        ->assertSee('Sem fluxo para os filtros escolhidos', false);
 });
 
 it('defaults to all_time period when no period is specified', function () {
@@ -25,6 +29,31 @@ it('respects the period query parameter', function () {
     $this->get(route('financial.reports', ['period' => 'this_month']))
         ->assertSuccessful()
         ->assertViewHas('period', 'this_month');
+});
+
+it('provides a period summary for compact report views', function () {
+    FinancialTransaction::factory()->posted()->create([
+        'type' => 'income',
+        'amount' => 120,
+        'date' => '2026-08-18',
+    ]);
+    FinancialTransaction::factory()->posted()->create([
+        'type' => 'expense',
+        'amount' => 50,
+        'date' => '2026-08-18',
+    ]);
+
+    $this->get(route('financial.reports', [
+        'period' => 'custom',
+        'startDate' => '2026-08-18',
+        'endDate' => '2026-08-18',
+    ]))
+        ->assertSuccessful()
+        ->assertViewHas('summary', [
+            'income' => 120.0,
+            'expense' => 50.0,
+            'balance' => 70.0,
+        ]);
 });
 
 it('filters report rows by transaction and item tags before paginating', function () {
@@ -73,4 +102,48 @@ it('filters report rows by transaction and item tags before paginating', functio
         ->and($transactions->first()->description)->toBe($itemTaggedTransaction->description.' - '.$item->description)
         ->and((float) $transactions->first()->amount)->toBe(10.0)
         ->and($transactions->first()->tags->modelKeys())->toBe([$tag->id]);
+});
+
+it('applies a tag filter to report summaries and chart data', function () {
+    $tag = FinancialTag::factory()->create();
+    $tagged = FinancialTransaction::factory()->posted()->create([
+        'type' => 'income',
+        'amount' => 100,
+        'date' => '2026-08-18',
+    ]);
+    $tagged->tags()->attach($tag, ['is_primary' => true]);
+
+    FinancialTransaction::factory()->posted()->create([
+        'type' => 'income',
+        'amount' => 250,
+        'date' => '2026-08-18',
+    ]);
+
+    $response = $this->get(route('financial.reports', [
+        'period' => 'custom',
+        'startDate' => '2026-08-18',
+        'endDate' => '2026-08-18',
+        'tag_id' => $tag->id,
+    ]));
+
+    $response->assertSuccessful()
+        ->assertViewHas('summary', [
+            'income' => 100.0,
+            'expense' => 0,
+            'balance' => 100.0,
+        ])
+        ->assertViewHas('evolution', fn (array $evolution): bool => end($evolution)['income'] === 100.0);
+});
+
+it('offers a clear action when a report tag filter has no transactions', function () {
+    $response = $this->get(route('financial.reports', [
+        'period' => 'custom',
+        'startDate' => '2026-08-18',
+        'endDate' => '2026-08-18',
+        'tag_id' => 999999,
+    ]));
+
+    $response->assertSuccessful()
+        ->assertSee('Nenhuma transação corresponde a esta tag', false)
+        ->assertSee('Remover filtro', false);
 });

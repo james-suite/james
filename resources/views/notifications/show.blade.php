@@ -1,12 +1,13 @@
 <x-layouts.app>
     <x-page-header title="Detalhes da Notificação">
-        <div class="flex items-center gap-2">
-            <x-back-button fallback="{{ route('notifications.index') }}" />
+        <div class="flex w-full items-center gap-3 sm:w-auto">
+            <x-back-button fallback="{{ route('notifications.index') }}" class="flex-1 sm:flex-initial" />
 
             <x-modal.delete
                 action="{{ route('notifications.destroy', $notification) }}"
                 item-name="esta notificação"
                 title="Excluir Notificação"
+                button-class="flex-1 sm:flex-initial"
             />
         </div>
     </x-page-header>

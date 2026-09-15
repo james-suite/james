@@ -1,6 +1,10 @@
 <?php
 
 use App\Models\Contact;
+use App\Models\FinancialAccount;
+use App\Models\FinancialCreditCard;
+use App\Models\FinancialTag;
+use App\Models\FinancialTransaction;
 use App\Models\Settlement;
 use App\Models\SettlementGroup;
 use App\Models\User;
@@ -56,6 +60,36 @@ it('can store a settlement group', function () {
         'description' => 'Pizza',
         'total_amount' => 100,
     ]);
+});
+
+it('uses only the selected account when both group transaction targets are submitted', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::REEMBOLSO_ID,
+        'name' => 'Reembolso',
+    ]);
+    $contact = Contact::factory()->create();
+    $account = FinancialAccount::factory()->create();
+    $card = FinancialCreditCard::factory()->create();
+
+    $this->post(route('settlements.groups.store'), [
+        'description' => 'Conta na conta corrente',
+        'total_amount' => 100,
+        'date' => '2023-01-01',
+        'mode' => 'equal',
+        'my_amount' => 50,
+        'create_transaction' => true,
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'financial_credit_card_id' => $card->id,
+        'contacts' => [
+            ['id' => $contact->id, 'amount' => 50],
+        ],
+    ])->assertRedirect(route('settlements.index'));
+
+    $transaction = FinancialTransaction::query()->latest('id')->firstOrFail();
+
+    expect($transaction->financial_account_id)->toBe($account->id)
+        ->and($transaction->financial_credit_card_invoice_id)->toBeNull();
 });
 
 it('rejects duplicate contacts and inconsistent totals', function () {

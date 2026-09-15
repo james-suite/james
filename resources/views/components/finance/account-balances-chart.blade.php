@@ -4,13 +4,15 @@
     <div 
         class="w-full flex-1 relative min-h-64"
         x-data="{
-            initChart() {
-                if (typeof echarts === 'undefined') {
-                    console.error('Apache ECharts is not loaded.');
+            chart: null,
+            resizeHandler: null,
+            async initChart() {
+                if (!this.$refs.chartContainer.offsetParent) {
                     return;
                 }
-                
-                const chart = echarts.init(this.$refs.chartContainer);
+
+                const echarts = await window.loadEcharts();
+                this.chart = echarts.init(this.$refs.chartContainer);
                 const data = {{ json_encode($chartData) }};
                 
                 const total = data.reduce((acc, item) => acc + item.value, 0);
@@ -64,8 +66,13 @@
                     ]
                 };
                 
-                chart.setOption(option);
-                window.addEventListener('resize', () => { chart.resize(); });
+                this.chart.setOption(option);
+                this.resizeHandler = () => this.chart?.resize();
+                window.addEventListener('resize', this.resizeHandler);
+            },
+            destroy() {
+                window.removeEventListener('resize', this.resizeHandler);
+                this.chart?.dispose();
             }
         }"
         x-init="initChart"

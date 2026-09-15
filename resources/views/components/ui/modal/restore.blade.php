@@ -81,13 +81,13 @@
     </x-slot>
 
     @if($alpineAction)
-        <form :action="{!! $alpineAction !!}" method="POST" class="m-0">
+        <form :action="{!! $alpineAction !!}" method="POST" class="m-0" x-data="{ loading: false }" @submit="loading = true">
     @else
-        <form action="{{ $action }}" method="POST" class="m-0">
+        <form action="{{ $action }}" method="POST" class="m-0" x-data="{ loading: false }" @submit="loading = true">
     @endif
         @csrf
         @method('PATCH')
-        <x-button type="submit" color="green" class="w-full sm:w-auto">
+        <x-button type="submit" color="success" class="w-full sm:w-auto">
             {{ $confirmText }}
         </x-button>
     </form>

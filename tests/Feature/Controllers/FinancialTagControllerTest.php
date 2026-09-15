@@ -38,6 +38,19 @@ it('can store tag', function () {
     ]);
 });
 
+it('can add selected suggested tags', function () {
+    $tag = config('finance.default_tags.0');
+
+    $this->post(route('financial.tags.defaults'), ['tags' => [$tag['name']]])
+        ->assertRedirect(route('financial.tags.index'));
+
+    $this->assertDatabaseHas('financial_tags', [
+        'name' => $tag['name'],
+        'icon' => $tag['icon'],
+        'color_hex' => $tag['color_hex'],
+    ]);
+});
+
 it('can view edit tag page', function () {
     $tag = FinancialTag::factory()->create();
 

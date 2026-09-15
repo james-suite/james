@@ -3,6 +3,7 @@
 use App\Enums\SettlementType;
 use App\Models\Contact;
 use App\Models\FinancialAccount;
+use App\Models\FinancialCreditCard;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\Settlement;
@@ -18,7 +19,18 @@ beforeEach(function () {
 });
 
 it('can list settlements index (dashboard)', function () {
-    $this->get(route('settlements.index'))->assertSuccessful();
+    $contact = Contact::factory()->create(['name' => 'Contato do Payload']);
+
+    $this->get(route('settlements.index'))
+        ->assertSuccessful()
+        ->assertViewHas('contactOptions', function ($options) use ($contact): bool {
+            return $options->first() === [
+                'id' => $contact->id,
+                'name' => 'Contato do Payload',
+                'net_balance' => 0.0,
+                'group_ids' => [],
+            ];
+        });
 });
 
 it('can list global settlement history', function () {
@@ -155,6 +167,32 @@ it('assigns selected tags to a payment made to a contact', function () {
     ]);
 });
 
+it('uses only the selected account when both settlement targets are submitted', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::REEMBOLSO_ID,
+        'name' => 'Reembolso',
+    ]);
+    $contact = Contact::factory()->create();
+    $account = FinancialAccount::factory()->create();
+    $card = FinancialCreditCard::factory()->create();
+
+    $this->post(route('settlements.store', $contact), [
+        'type' => SettlementType::IPaid->value,
+        'amount' => 150,
+        'description' => 'Pagamento em conta',
+        'date' => '2026-08-30',
+        'create_transaction' => true,
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'financial_credit_card_id' => $card->id,
+    ])->assertRedirect(route('settlements.contact.show', $contact));
+
+    $transaction = Settlement::query()->latest('id')->firstOrFail()->financialTransaction;
+
+    expect($transaction->financial_account_id)->toBe($account->id)
+        ->and($transaction->financial_credit_card_invoice_id)->toBeNull();
+});
+
 it('replaces a payment made tag selection when updating a settlement', function () {
     FinancialTag::factory()->create([
         'id' => FinancialTag::REEMBOLSO_ID,
@@ -237,6 +275,30 @@ it('preselects custom payment tags when editing a settlement', function () {
         ->assertSuccessful()
         ->assertViewHas('defaultTags', fn (array $tags): bool => $tags === [$customTag->id])
         ->assertViewHas('defaultPrimaryTag', $customTag->id);
+});
+
+it('keeps the financial transaction when an edited settlement stops linking to it', function () {
+    $contact = Contact::factory()->create();
+    $transaction = FinancialTransaction::factory()->create();
+    $settlement = Settlement::create([
+        'contact_id' => $contact->id,
+        'financial_transaction_id' => $transaction->id,
+        'type' => SettlementType::IPaid->value,
+        'amount' => 150,
+        'description' => 'Jantar',
+        'date' => '2026-08-30',
+    ]);
+
+    $this->put(route('settlements.update', $settlement), [
+        'type' => SettlementType::IPaid->value,
+        'amount' => 150,
+        'description' => 'Jantar',
+        'date' => '2026-08-30',
+        'create_transaction' => false,
+    ])->assertRedirect(route('settlements.contact.show', $contact));
+
+    $this->assertDatabaseHas('financial_transactions', ['id' => $transaction->id]);
+    expect($settlement->fresh()->financial_transaction_id)->toBeNull();
 });
 
 it('keeps reimbursement as the primary tag when no payment tags are selected', function () {

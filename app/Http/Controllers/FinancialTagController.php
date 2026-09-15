@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreDefaultFinancialTagsRequest;
 use App\Http\Requests\StoreFinancialTagRequest;
 use App\Http\Requests\UpdateFinancialTagRequest;
 use App\Models\FinancialTag;
 use BladeUI\Icons\Factory;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class FinancialTagController extends Controller
@@ -54,16 +54,13 @@ class FinancialTagController extends Controller
     /**
      * Store multiple default tags in storage.
      */
-    public function storeDefaults(Request $request): RedirectResponse
+    public function storeDefaults(StoreDefaultFinancialTagsRequest $request): RedirectResponse
     {
-        $request->validate([
-            'tags' => ['required', 'array'],
-            'tags.*' => ['required', 'string'],
-        ]);
+        $validated = $request->validated();
 
         $allDefaultTags = collect(config('finance.default_tags', []))->keyBy('name');
 
-        foreach ($request->tags as $tagName) {
+        foreach ($validated['tags'] as $tagName) {
             if ($allDefaultTags->has($tagName)) {
                 $tagData = $allDefaultTags->get($tagName);
 

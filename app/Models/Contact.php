@@ -59,7 +59,11 @@ class Contact extends Model implements HasMedia
         return Attribute::get(function (): ?string {
             $media = $this->getFirstMedia('avatar');
 
-            return $media ? route('contacts.avatar', $this).'?v='.$media->updated_at->timestamp : null;
+            if (! $media || ! is_file($media->getPath())) {
+                return null;
+            }
+
+            return route('contacts.avatar', $this).'?v='.$media->updated_at->timestamp;
         });
     }
 

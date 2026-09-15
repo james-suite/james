@@ -20,7 +20,8 @@ class ContactGroupController extends Controller
                 $query->where('name', 'ilike', '%'.$search.'%');
             })
             ->orderBy('name')
-            ->get();
+            ->paginate(12)
+            ->withQueryString();
 
         return view('contacts.groups.index', compact('groups'));
     }

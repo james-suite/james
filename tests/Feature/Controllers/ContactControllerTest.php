@@ -7,6 +7,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 uses(RefreshDatabase::class);
 
@@ -209,3 +211,32 @@ it('can remove an avatar', function () {
 
     expect($contact->fresh()->getFirstMedia('avatar'))->toBeNull();
 })->skip(! extension_loaded('gd'), 'GD extension is not installed.');
+
+it('returns not found when an avatar media record points to a missing file', function () {
+    Storage::fake('avatars');
+
+    $contact = Contact::factory()->create();
+    $media = Media::create([
+        'model_type' => Contact::class,
+        'model_id' => $contact->id,
+        'uuid' => (string) Str::uuid(),
+        'collection_name' => 'avatar',
+        'name' => 'avatar',
+        'file_name' => 'avatar.webp',
+        'mime_type' => 'image/webp',
+        'disk' => 'avatars',
+        'conversions_disk' => 'avatars',
+        'size' => 1,
+        'manipulations' => [],
+        'custom_properties' => [],
+        'generated_conversions' => [],
+        'responsive_images' => [],
+        'order_column' => 1,
+    ]);
+
+    expect(is_file($media->getPath()))->toBeFalse();
+
+    $this->actingAs($this->user)
+        ->get(route('contacts.avatar', $contact))
+        ->assertNotFound();
+});

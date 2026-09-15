@@ -10,11 +10,25 @@
     'currency' => false,
     'allowNegative' => false,
     'bag' => 'default',
+    'help' => null,
 ])
+
+@php
+    $hasValidationError = $name && $errors->getBag($bag)->has($name);
+    $fieldId = $currency && $name ? $name . '_display' : $name;
+    $describedBy = collect([
+        $hasValidationError ? $name . '-error' : null,
+        $help ? $name . '-help' : null,
+    ])->filter()->implode(' ');
+    $attributes = $attributes->except(['help'])->merge(array_filter([
+        'aria-invalid' => $hasValidationError ? 'true' : null,
+        'aria-describedby' => $describedBy ?: null,
+    ]));
+@endphp
 
 <x-field>
     @if ($label)
-        <x-label :for="$name" class="{{ $labelClass }}">
+        <x-label :for="$fieldId" class="{{ $labelClass }}">
             {{ $label }}
         </x-label>
     @endif
@@ -29,8 +43,13 @@
         :currency="$currency"
         :allow-negative="$allowNegative"
         :bag="$bag"
+        :has-error="$hasValidationError"
         {{ $attributes }}
     />
+
+    @if ($help)
+        <p id="{{ $name }}-help" class="mt-1.5 text-xs text-neutral-500">{{ $help }}</p>
+    @endif
 
     <x-error :name="$name" :bag="$bag" />
 </x-field>

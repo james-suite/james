@@ -27,7 +27,7 @@
 
         <x-table.body>
             @forelse($recurrences as $recurrence)
-                <x-table.row href="{{ route('financial.recurrences.edit', $recurrence) }}" class="hidden sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)] group transition-all">
+                <x-table.row href="{{ route('financial.recurrences.show', $recurrence) }}" class="hidden sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)] group transition-all">
                     <x-table.cell>
                         <div class="flex min-w-0 items-center gap-3">
                             <div class="flex size-10 shrink-0 items-center justify-center rounded-xl {{ $recurrence->type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' }}">

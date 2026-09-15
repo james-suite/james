@@ -1,3 +1,16 @@
+@php
+    $singleAccountId = $accounts->count() === 1 ? $accounts->first()->id : null;
+    $singleCardId = $cards->count() === 1 ? $cards->first()->id : null;
+    $existingAccountId = isset($settlementGroup) && $settlementGroup->financialTransaction
+        ? $settlementGroup->financialTransaction->financial_account_id
+        : null;
+    $existingCardId = isset($settlementGroup) && $settlementGroup->financialTransaction && $settlementGroup->financialTransaction->invoice
+        ? $settlementGroup->financialTransaction->invoice->financial_credit_card_id
+        : null;
+    $selectedAccountId = old('financial_account_id', $existingAccountId ?? $singleAccountId);
+    $selectedCardId = old('financial_credit_card_id', $existingCardId ?? $singleCardId);
+@endphp
+
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
 
 
@@ -130,18 +143,18 @@
 
                     <div>
                         <div x-show="targetType === 'account'">
-                            <x-form-select name="financial_account_id">
+                            <x-form-select name="financial_account_id" ::disabled="targetType !== 'account'">
                                 <option value="">Selecione uma conta...</option>
                                 @foreach($accounts as $account)
-                                    <option value="{{ $account->id }}" {{ old('financial_account_id', isset($settlementGroup) && $settlementGroup->financialTransaction ? $settlementGroup->financialTransaction->financial_account_id : null) == $account->id ? 'selected' : '' }}>{{ $account->name }}</option>
+                                    <option value="{{ $account->id }}" @selected($selectedAccountId == $account->id)>{{ $account->name }}</option>
                                 @endforeach
                             </x-form-select>
                         </div>
                         <div x-show="targetType === 'card'" style="display: none;">
-                            <x-form-select name="financial_credit_card_id">
+                            <x-form-select name="financial_credit_card_id" ::disabled="targetType !== 'card'">
                                 <option value="">Selecione um cartão...</option>
                                 @foreach($cards as $card)
-                                    <option value="{{ $card->id }}" {{ old('financial_credit_card_id', isset($settlementGroup) && $settlementGroup->financialTransaction && $settlementGroup->financialTransaction->invoice ? $settlementGroup->financialTransaction->invoice->financial_credit_card_id : null) == $card->id ? 'selected' : '' }}>{{ $card->name }}</option>
+                                    <option value="{{ $card->id }}" @selected($selectedCardId == $card->id)>{{ $card->name }}</option>
                                 @endforeach
                             </x-form-select>
                         </div>

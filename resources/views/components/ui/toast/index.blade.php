@@ -1,10 +1,16 @@
 @php
-    $hasInitialToast = session()->has('toast') || session()->has('success');
+    $hasInitialToast = session()->has('toast') || session()->has('success') || session()->has('error') || session()->has('warning');
 
     if (session()->has('toast')) {
         $toast = session('toast');
         $initialType = $toast['type'] ?? 'info';
         $initialMessage = $toast['message'] ?? '';
+    } elseif (session()->has('error')) {
+        $initialType = 'error';
+        $initialMessage = session('error');
+    } elseif (session()->has('warning')) {
+        $initialType = 'warning';
+        $initialMessage = session('warning');
     } else {
         $initialType = 'success';
         $initialMessage = session('success', '');
@@ -55,7 +61,10 @@
             x-transition:enter-start="translate-x-full opacity-0" x-transition:enter-end="translate-x-0 opacity-100"
             x-transition:leave="transition motion-ease-smooth-out motion-duration-fast transform is-leaving"
             x-transition:leave-start="translate-x-0 opacity-100" x-transition:leave-end="translate-x-full opacity-0"
-            class="t-toast w-full max-w-sm rounded-lg shadow-lg border border-neutral-300 bg-white overflow-hidden pointer-events-auto">
+            class="t-toast w-full max-w-sm rounded-lg shadow-lg border border-neutral-300 bg-white overflow-hidden pointer-events-auto"
+            role="status"
+            aria-atomic="true"
+            :aria-live="type === 'error' ? 'assertive' : 'polite'">
             <div class="flex items-center gap-4 p-4">
                 {{-- Ícone --}}
                 <div class="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full shrink-0" x-show="type === 'success'">
@@ -71,8 +80,8 @@
                         <x-heroicon-o-information-circle class="w-5 h-5 text-blue-600" />
                 </div>
                 {{-- Mensagem e Botão de Fechar --}}
-                <div class="flex-1" x-text="message"></div>
-                <button class="cursor-pointer shrink-0" @click="close()">
+                <div class="flex-1 text-sm font-medium text-neutral-800" x-text="message"></div>
+                <button type="button" class="cursor-pointer shrink-0" aria-label="Fechar mensagem" @click="close()">
                     <x-heroicon-o-x-mark class="size-6" />
                 </button>
             </div>

@@ -1,3 +1,16 @@
+@php
+    $singleAccountId = $accounts->count() === 1 ? $accounts->first()->id : null;
+    $singleCardId = $cards->count() === 1 ? $cards->first()->id : null;
+    $existingAccountId = isset($settlement) && $settlement->financialTransaction
+        ? $settlement->financialTransaction->financial_account_id
+        : null;
+    $existingCardId = isset($settlement) && $settlement->financialTransaction
+        ? optional($settlement->financialTransaction->invoice)->financial_credit_card_id
+        : null;
+    $selectedAccountId = old('financial_account_id', $existingAccountId ?? $singleAccountId);
+    $selectedCardId = old('financial_credit_card_id', $existingCardId ?? $singleCardId);
+@endphp
+
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
     
     <!-- Left Column: Main Data -->
@@ -48,6 +61,12 @@
             <div class="space-y-4 pt-4 border-t border-neutral-100" x-show="type !== 'i_owe'" x-transition>
                 <input type="hidden" name="create_transaction" value="0">
                 <x-switch name="create_transaction" x-model="createTransaction" label="Criar Transação?" value="1" color="accent" />
+
+                @if (isset($settlement) && $settlement->financial_transaction_id)
+                    <p x-show="!createTransaction" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                        A transação já criada será desvinculada deste acerto e continuará disponível em Finanças. Ela não será excluída.
+                    </p>
+                @endif
                 
                 <div class="space-y-4 pt-2" x-show="createTransaction" x-transition>
                     <x-radio-block-group legend="Onde">
@@ -59,18 +78,18 @@
                     
                     <div>
                         <div x-show="targetType === 'account'">
-                            <x-form-select name="financial_account_id">
+                            <x-form-select name="financial_account_id" ::disabled="targetType !== 'account'">
                                 <option value="">Selecione uma conta...</option>
                                 @foreach($accounts as $account)
-                                    <option value="{{ $account->id }}" {{ old('financial_account_id', isset($settlement) && $settlement->financialTransaction ? $settlement->financialTransaction->financial_account_id : '') == $account->id ? 'selected' : '' }}>{{ $account->name }}</option>
+                                    <option value="{{ $account->id }}" @selected($selectedAccountId == $account->id)>{{ $account->name }}</option>
                                 @endforeach
                             </x-form-select>
                         </div>
                         <div x-show="targetType === 'card'" style="display: none;">
-                            <x-form-select name="financial_credit_card_id">
+                            <x-form-select name="financial_credit_card_id" ::disabled="targetType !== 'card'">
                                 <option value="">Selecione um cartão...</option>
                                 @foreach($cards as $card)
-                                    <option value="{{ $card->id }}" {{ old('financial_credit_card_id', isset($settlement) && $settlement->financialTransaction ? optional($settlement->financialTransaction->invoice)->financial_credit_card_id : '') == $card->id ? 'selected' : '' }}>{{ $card->name }}</option>
+                                    <option value="{{ $card->id }}" @selected($selectedCardId == $card->id)>{{ $card->name }}</option>
                                 @endforeach
                             </x-form-select>
                         </div>

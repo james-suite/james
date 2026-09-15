@@ -18,10 +18,13 @@
     if (str_ends_with($primaryName, '[]')) {
         $primaryName = substr($primaryName, 0, -2);
     }
+    $selectorId = 'tags-selector-' . md5($name);
+    $dialogTitleId = $selectorId . '-dialog-title';
 @endphp
 
 <div x-data="{
     open: false,
+    previouslyFocused: null,
     search: '',
     options: {{ Js::from($options) }},
     selectedIds: {{ $xValue ?: Js::from(is_array($value) ? array_values($value) : []) }} || [],
@@ -48,6 +51,7 @@
 
     openModal() {
         window.dispatchEvent(new CustomEvent('james-tooltip-show', { detail: { id: null } }));
+        this.previouslyFocused = document.activeElement;
         this.search = '';
         this.open = true;
         this.$nextTick(() => this.$refs.searchInput?.focus());
@@ -55,6 +59,7 @@
 
     closeModal() {
         this.open = false;
+        this.$nextTick(() => this.previouslyFocused?.focus());
     },
 
     toggleTag(id) {
@@ -82,15 +87,27 @@
     <!-- Trigger Button & Label -->
     <div class="grid w-full gap-1.5">
         @if($label)
-            <label class="inline-flex items-center text-sm font-semibold text-neutral-700">{{ $label }}</label>
+            @if (isset($trigger))
+                <span class="inline-flex items-center text-sm font-semibold text-neutral-700">{{ $label }}</span>
+            @else
+                <label for="{{ $selectorId }}" class="inline-flex items-center text-sm font-semibold text-neutral-700">{{ $label }}</label>
+            @endif
         @endif
 
         @if(isset($trigger))
-            <div class="cursor-pointer" @click="openModal">
+            <div class="cursor-pointer" @click="openModal()">
                 {{ $trigger }}
             </div>
         @else
-            <div class="w-full min-h-11 border border-neutral-200 rounded-xl py-2 px-3 bg-white flex flex-wrap gap-2 items-center cursor-pointer hover:border-accent transition-colors" @click="openModal">
+            <button
+                id="{{ $selectorId }}"
+                type="button"
+                class="flex min-h-11 w-full flex-wrap items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent"
+                aria-haspopup="dialog"
+                aria-controls="{{ $selectorId }}-dialog"
+                :aria-expanded="open.toString()"
+                @click="openModal()"
+            >
 
                 <template x-if="selectedOptions.length === 0">
                     <span class="text-sm text-neutral-400">Selecionar tags...</span>
@@ -109,10 +126,10 @@
                     </span>
                 </template>
 
-                <button type="button" class="ml-auto flex items-center justify-center p-1 rounded-full text-neutral-400 hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer">
+                <span class="ml-auto flex items-center justify-center rounded-full p-1 text-neutral-400 transition-colors">
                     <x-heroicon-o-plus class="size-4" />
-                </button>
-            </div>
+                </span>
+            </button>
         @endif
 
         <template x-for="id in selectedIds" :key="id">
@@ -126,11 +143,15 @@
 
     <!-- Modal -->
     <template x-teleport="body">
-        <div x-show="open" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-            <div class="fixed inset-0 bg-neutral-900/50 backdrop-blur-sm transition-opacity" @click="closeModal" x-show="open" x-transition.opacity></div>
+        <div x-show="open" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" @keydown.escape.window="if (open) closeModal()">
+            <div class="fixed inset-0 bg-neutral-900/50 backdrop-blur-sm transition-opacity" @click="closeModal()" x-show="open" x-transition.opacity></div>
 
             <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
                 <div x-show="open"
+                     id="{{ $selectorId }}-dialog"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="{{ $dialogTitleId }}"
                      x-transition:enter="motion-ease-smooth-out motion-duration-fast"
                      x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:motion-scale-large"
                      x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -142,11 +163,11 @@
                     <!-- Header -->
                     <div class="px-6 py-4 border-b border-neutral-100 flex items-center justify-between shrink-0 bg-white rounded-t-2xl">
                         <div>
-                            <h3 class="text-lg font-bold text-neutral-900">Selecione as Tags</h3>
+                            <h3 id="{{ $dialogTitleId }}" class="text-lg font-bold text-neutral-900">Selecione as Tags</h3>
                             <p class="text-sm text-neutral-500">Marque as tags relacionadas. Clique na estrela para definir a principal.</p>
                         </div>
                         <x-tooltip text="Fechar" position="top">
-                            <button type="button" class="text-neutral-400 hover:text-neutral-600 transition-colors p-1 bg-neutral-50 hover:bg-neutral-100 rounded-full cursor-pointer" @click="closeModal">
+                            <button type="button" class="cursor-pointer rounded-full bg-neutral-50 p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600" aria-label="Fechar seletor de tags" @click="closeModal()">
                                 <x-heroicon-o-x-mark class="size-5" />
                             </button>
                         </x-tooltip>
@@ -163,13 +184,15 @@
                     </div>
 
                     <!-- Tags Grid -->
-                    <div class="p-6 overflow-y-auto flex-1 bg-white">
+                    <div class="min-h-0 flex-1 overflow-y-auto scroll-fade-y bg-white p-6">
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                             <template x-for="tag in filteredOptions" :key="tag.id">
-                                <button type="button"
-                                    @click="toggleTag(tag.id)"
-                                    class="relative p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all text-center group cursor-pointer"
-                                    :class="selectedIds.includes(tag.id) ? 'border-accent bg-accent/5 shadow-sm' : 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50'">
+                                <div class="relative">
+                                    <button type="button"
+                                        @click="toggleTag(tag.id)"
+                                        class="group flex w-full flex-col items-center gap-3 rounded-xl border-2 p-4 text-center transition-all"
+                                        :aria-pressed="selectedIds.includes(tag.id).toString()"
+                                        :class="selectedIds.includes(tag.id) ? 'border-accent bg-accent/5 shadow-sm' : 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50'">
 
                                     <div class="shrink-0 flex items-center justify-center font-medium w-12 h-12 text-2xl border-transparent text-white shadow-sm rounded-full transition-all"
                                          :style="`background-color: ${tag.color_hex || '#64748b'}; opacity: ${selectedIds.includes(tag.id) ? '1' : '0.85'};`">
@@ -177,16 +200,19 @@
                                     </div>
                                     <span class="text-sm font-semibold transition-colors" :class="selectedIds.includes(tag.id) ? 'text-accent' : 'text-neutral-700 group-hover:text-neutral-900'" x-text="tag.name"></span>
 
+                                    </button>
+
                                     <!-- Primary Tag indicator -->
                                     <x-tooltip text="Definir como principal" class="absolute! top-2 right-2 z-10" x-show="selectedIds.includes(tag.id) && !({{ $xDisablePrimary === 'false' ? 'false' : $xDisablePrimary }})">
-                                        <div @click.stop="setPrimary(tag.id)"
-                                             class="p-1 rounded-full transition-colors cursor-pointer"
+                                        <button type="button" @click.stop="setPrimary(tag.id)"
+                                             :aria-label="`Definir ${tag.name} como principal`"
+                                             class="cursor-pointer rounded-full p-1 transition-colors"
                                              :class="primaryId === tag.id ? 'text-yellow-500 bg-yellow-100/80 shadow-xs' : 'text-neutral-400 hover:text-yellow-500 hover:bg-yellow-50/70'">
                                             <x-heroicon-s-star class="size-5" x-show="primaryId === tag.id" />
                                             <x-heroicon-o-star class="size-5" x-show="primaryId !== tag.id" />
-                                        </div>
+                                        </button>
                                     </x-tooltip>
-                                </button>
+                                </div>
                             </template>
                         </div>
 
@@ -204,7 +230,7 @@
                             <x-heroicon-o-plus-circle class="size-5" />
                             Criar nova tag
                         </a>
-                        <x-button type="button" @click="closeModal" color="primary" class="w-full sm:w-auto">
+                        <x-button type="button" @click="closeModal()" color="accent" class="w-full sm:w-auto">
                             Concluir Seleção
                         </x-button>
                     </div>

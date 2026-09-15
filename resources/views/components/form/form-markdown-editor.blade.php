@@ -17,8 +17,14 @@
     @endif
 
     <div class="grid w-full items-center gap-1.5"
-        x-data="{ mde: null }"
-        x-init="mde = new EasyMDE({ element: $refs.editor, forceSync: true, status: false, spellChecker: false })">
+        x-data="{
+            mde: null,
+            async initEditor() {
+                const EasyMDE = await window.loadEasyMDE();
+                this.mde = new EasyMDE({ element: this.$refs.editor, forceSync: true, status: false, spellChecker: false });
+            },
+        }"
+        x-init="initEditor()">
         <textarea
             x-ref="editor"
             id="{{ $name }}"

@@ -1,3 +1,12 @@
+@php
+    $singleAccountId = $accounts->count() === 1 ? $accounts->first()->id : null;
+    $singleCardId = $cards->count() === 1 ? $cards->first()->id : null;
+    $existingAccountId = isset($transaction) ? $transaction->financial_account_id : null;
+    $existingCardId = isset($transaction) ? optional($transaction->invoice)->financial_credit_card_id : null;
+    $selectedAccountId = old('financial_account_id', $existingAccountId ?? $singleAccountId);
+    $selectedCardId = old('financial_credit_card_id', $existingCardId ?? $singleCardId);
+@endphp
+
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
     
     <!-- Left Column: Main Data & Items -->
@@ -53,8 +62,9 @@
             {{-- Receita ou Despesa --}}
             <x-radio-block-group legend="Classificação">
                 <x-radio-block name="type" x-model="type" value="expense" icon="heroicon-o-arrow-trending-down" label="Despesa" activeClass="peer-checked:text-red-600" inactiveClass="text-red-600 hover:text-red-700" />
-                <x-radio-block name="type" x-model="type" value="income" icon="heroicon-o-arrow-trending-up" label="Receita" activeClass="peer-checked:text-green-600" inactiveClass="text-green-600 hover:text-green-700" />
+                <x-radio-block name="type" x-model="type" value="income" icon="heroicon-o-arrow-trending-up" label="Receita" activeClass="peer-checked:text-green-600" inactiveClass="text-green-600 hover:text-green-700" ::disabled="mode === 'installment' && targetType === 'card'" />
             </x-radio-block-group>
+            <p class="text-xs text-neutral-500 -mt-3" x-show="mode === 'installment' && targetType === 'card'">Parcelamentos no cartão são registrados como despesa.</p>
 
             {{-- Conta ou Cartão --}}
             <div class="space-y-4 pt-2">
@@ -65,18 +75,18 @@
                 
                 <div>
                     <div x-show="targetType === 'account'">
-                        <x-form-select name="financial_account_id">
+                        <x-form-select name="financial_account_id" ::disabled="targetType !== 'account'">
                             <option value="">Selecione uma conta...</option>
                             @foreach($accounts as $account)
-                                <option value="{{ $account->id }}" {{ old('financial_account_id', $transaction->financial_account_id ?? '') == $account->id ? 'selected' : '' }}>{{ $account->name }}</option>
+                                <option value="{{ $account->id }}" @selected($selectedAccountId == $account->id)>{{ $account->name }}</option>
                             @endforeach
                         </x-form-select>
                     </div>
                     <div x-show="targetType === 'card'" style="display: none;">
-                        <x-form-select name="financial_credit_card_id">
+                        <x-form-select name="financial_credit_card_id" ::disabled="targetType !== 'card'">
                             <option value="">Selecione um cartão...</option>
                             @foreach($cards as $card)
-                                <option value="{{ $card->id }}" {{ old('financial_credit_card_id', isset($transaction) ? optional($transaction->invoice)->financial_credit_card_id : '') == $card->id ? 'selected' : '' }}>{{ $card->name }}</option>
+                                <option value="{{ $card->id }}" @selected($selectedCardId == $card->id)>{{ $card->name }}</option>
                             @endforeach
                         </x-form-select>
                     </div>

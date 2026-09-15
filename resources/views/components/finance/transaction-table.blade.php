@@ -1,4 +1,11 @@
-@props(['transactions', 'hidePendingBadge' => false])
+@props([
+    'transactions',
+    'hidePendingBadge' => false,
+    'emptyTitle' => 'Nenhuma transação encontrada',
+    'emptyDescription' => 'Não há transações disponíveis no momento.',
+    'emptyActionText' => null,
+    'emptyActionRoute' => null,
+])
 
 <x-table {{ $attributes }}>
     @if($transactions->isNotEmpty())
@@ -18,7 +25,7 @@
                 if (!empty($transaction->is_invoice) && $transaction->invoice) {
                     $href = route('financial.cards.invoices.show', [$transaction->invoice->financial_credit_card_id, $transaction->invoice->id]);
                 } elseif (!empty($transaction->is_recurrence) && !empty($transaction->recurrence_id)) {
-                    $href = route('financial.recurrences.edit', $transaction->recurrence_id);
+                    $href = route('financial.recurrences.show', $transaction->recurrence_id);
                 } elseif ($transaction->id) {
                     $href = route('financial.transactions.show', $transaction->id);
                 }
@@ -171,8 +178,10 @@
         @empty
             <x-empty-state 
                 icon="heroicon-o-banknotes" 
-                title="Nenhuma transação encontrada" 
-                description="Não há transações disponíveis no momento."
+                :title="$emptyTitle"
+                :description="$emptyDescription"
+                :action-text="$emptyActionText"
+                :action-route="$emptyActionRoute"
             />
         @endforelse
     </x-table.body>
