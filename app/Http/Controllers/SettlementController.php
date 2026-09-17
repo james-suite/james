@@ -16,6 +16,7 @@ use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\Settlement;
 use App\Models\SettlementGroup;
+use App\Services\SettlementBalanceCalculator;
 use App\Traits\HandlesAttachments;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,8 @@ class SettlementController extends Controller
 {
     use HandlesAttachments;
 
+    public function __construct(private SettlementBalanceCalculator $settlementBalanceCalculator) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -38,57 +41,43 @@ class SettlementController extends Controller
     {
         $showArchived = $request->boolean('archived');
 
-        $theyOweSql = "(SELECT COALESCE(SUM(amount), 0) FROM settlements WHERE contact_id = contacts.id AND type = '".SettlementType::TheyOwe->value."' AND deleted_at IS NULL)";
-        $theyPaidSql = "(SELECT COALESCE(SUM(amount), 0) FROM settlements WHERE contact_id = contacts.id AND type = '".SettlementType::TheyPaid->value."' AND deleted_at IS NULL)";
-
-        $iOweSql = "(SELECT COALESCE(SUM(amount), 0) FROM settlements WHERE contact_id = contacts.id AND type = '".SettlementType::IOwe->value."' AND deleted_at IS NULL)";
-        $iPaidSql = "(SELECT COALESCE(SUM(amount), 0) FROM settlements WHERE contact_id = contacts.id AND type = '".SettlementType::IPaid->value."' AND deleted_at IS NULL)";
-
-        $toReceiveSql = "GREATEST(0, $theyOweSql - $theyPaidSql)";
-        $toPaySql = "GREATEST(0, $iOweSql - $iPaidSql)";
-
-        $netBalanceSql = "($toReceiveSql - $toPaySql)";
-        $settlementsCountSql = '(SELECT COUNT(*) FROM settlements WHERE contact_id = contacts.id AND deleted_at IS NULL)';
-
-        $contacts = Contact::with(['groups', 'media'])
+        $contacts = Contact::with([
+            'groups',
+            'media',
+            'settlements' => fn ($query) => $query
+                ->select(['id', 'contact_id', 'type', 'amount', 'date'])
+                ->orderBy('date')
+                ->orderBy('id'),
+        ])
             ->when($showArchived, function ($query) {
                 $query->whereHas('settlementArchive');
             }, function ($query) {
                 $query->notSettlementArchived();
             })
-            ->withSum(['settlements as they_owe' => fn ($q) => $q->where('type', SettlementType::TheyOwe->value)], 'amount')
-            ->withSum(['settlements as they_paid' => fn ($q) => $q->where('type', SettlementType::TheyPaid->value)], 'amount')
-            ->withSum(['settlements as i_owe' => fn ($q) => $q->where('type', SettlementType::IOwe->value)], 'amount')
-            ->withSum(['settlements as i_paid' => fn ($q) => $q->where('type', SettlementType::IPaid->value)], 'amount')
-            ->withCount('settlements')
-            ->orderByRaw("
-                CASE 
-                    WHEN $netBalanceSql > 0 THEN 3
-                    WHEN $netBalanceSql < 0 THEN 2
-                    WHEN $settlementsCountSql > 0 THEN 1
-                    ELSE 0
-                END DESC
-            ")
-            ->orderByRaw("
-                CASE 
-                    WHEN $netBalanceSql > 0 THEN $netBalanceSql
-                    WHEN $netBalanceSql < 0 THEN ABS($netBalanceSql)
-                    ELSE 0
-                END DESC
-            ")
             ->get()
-            ->map(function ($contact) {
-                $toReceive = max(0, round(($contact->they_owe ?? 0) - ($contact->they_paid ?? 0), 2));
-                $toPay = max(0, round(($contact->i_owe ?? 0) - ($contact->i_paid ?? 0), 2));
+            ->map(function (Contact $contact): Contact {
+                $balance = $this->settlementBalanceCalculator->calculate($contact->settlements);
 
-                $contact->to_receive = $toReceive;
-                $contact->to_pay = $toPay;
-                $contact->net_balance = round($toReceive - $toPay, 2);
+                $contact->to_receive = $balance['toReceive'];
+                $contact->to_pay = $balance['toPay'];
+                $contact->net_balance = $balance['netBalance'];
                 $contact->avatar_url = $contact->avatar;
-                // Add group_ids for filtering in Alpine
                 $contact->group_ids = $contact->groups->pluck('id')->toArray();
 
                 return $contact;
+            })
+            ->sort(function (Contact $left, Contact $right): int {
+                $priority = fn (Contact $contact): int => match (true) {
+                    $contact->net_balance > 0 => 3,
+                    $contact->net_balance < 0 => 2,
+                    $contact->settlements->isNotEmpty() => 1,
+                    default => 0,
+                };
+                $priorityComparison = $priority($right) <=> $priority($left);
+
+                return $priorityComparison !== 0
+                    ? $priorityComparison
+                    : abs($right->net_balance) <=> abs($left->net_balance);
             })
             ->values();
 
@@ -143,16 +132,10 @@ class SettlementController extends Controller
      */
     public function showContact(Contact $contact): View
     {
-        // Compute balances for this contact using the max(0, debt - payment) rule
-        $debtTheyOweMe = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::TheyOwe->value)->sum('amount');
-        $paymentsTheyMade = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::TheyPaid->value)->sum('amount');
-        $toReceive = max(0, round($debtTheyOweMe - $paymentsTheyMade, 2));
-
-        $debtIOweThem = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::IOwe->value)->sum('amount');
-        $paymentsIMade = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::IPaid->value)->sum('amount');
-        $toPay = max(0, round($debtIOweThem - $paymentsIMade, 2));
-
-        $netBalance = round($toReceive - $toPay, 2);
+        $balance = $this->settlementBalanceCalculator->forContact($contact);
+        $toReceive = $balance['toReceive'];
+        $toPay = $balance['toPay'];
+        $netBalance = $balance['netBalance'];
 
         // Get settlements history for this contact (paginated)
         $settlements = Settlement::where('contact_id', $contact->id)
@@ -212,15 +195,7 @@ class SettlementController extends Controller
         $isSettling = $request->boolean('settle');
 
         if ($isSettling) {
-            $debtTheyOweMe = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::TheyOwe->value)->sum('amount');
-            $paymentsTheyMade = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::TheyPaid->value)->sum('amount');
-            $toReceive = max(0, round($debtTheyOweMe - $paymentsTheyMade, 2));
-
-            $debtIOweThem = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::IOwe->value)->sum('amount');
-            $paymentsIMade = Settlement::where('contact_id', $contact->id)->where('type', SettlementType::IPaid->value)->sum('amount');
-            $toPay = max(0, round($debtIOweThem - $paymentsIMade, 2));
-
-            $netBalance = round($toReceive - $toPay, 2);
+            $netBalance = $this->settlementBalanceCalculator->forContact($contact)['netBalance'];
 
             if (abs($netBalance) > 0) {
                 $settlement = new Settlement;
