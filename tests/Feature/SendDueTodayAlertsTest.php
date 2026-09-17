@@ -58,7 +58,7 @@ it('details pending income and expenses due today and tomorrow', function () {
     });
 });
 
-it('includes transactions already posted today', function () {
+it('does not include manually posted transactions created for today', function () {
     $account = FinancialAccount::factory()->create(['name' => 'Conta Corrente']);
 
     FinancialTransaction::factory()->create([
@@ -72,10 +72,7 @@ it('includes transactions already posted today', function () {
 
     $this->artisan('finance:due-today-alerts')->assertSuccessful();
 
-    Notification::assertSentTo($this->user, DueTodayNotification::class, function ($notification) {
-        return $notification->alert['days'][0]['expenses'][0]['description'] === 'Energia'
-            && $notification->alert['days'][0]['expenses'][0]['destination'] === 'Conta Corrente';
-    });
+    Notification::assertNothingSent();
 });
 
 it('details account recurrences that have not been materialized', function () {
