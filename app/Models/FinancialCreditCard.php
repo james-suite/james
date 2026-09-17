@@ -193,15 +193,16 @@ class FinancialCreditCard extends Model
     }
 
     /**
-     * Create installment purchase spreading over invoices.
+     * Create installment transactions spreading over invoices.
      */
     public function createInstallmentPurchase(
         Carbon $purchaseDate,
         float $totalAmount,
         int $installments,
-        string $description
+        string $description,
+        string $type = 'expense'
     ): Collection {
-        return DB::transaction(function () use ($purchaseDate, $totalAmount, $installments, $description): Collection {
+        return DB::transaction(function () use ($purchaseDate, $totalAmount, $installments, $description, $type): Collection {
             $firstInvoice = FinancialCreditCardInvoice::resolveForDate($this, $purchaseDate);
             $installmentAmount = round($totalAmount / $installments, 2);
 
@@ -224,7 +225,7 @@ class FinancialCreditCard extends Model
                 $transactions->push($invoice->transactions()->create([
                     'financial_account_id' => null,
                     'date' => $purchaseDate,
-                    'type' => 'expense',
+                    'type' => $type,
                     'amount' => $amount,
                     'description' => $description,
                     'status' => TransactionStatus::Pending,
