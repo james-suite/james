@@ -16,7 +16,6 @@ Os ícones do projeto são provenientes do [Heroicons](https://heroicons.com/).
 - [x] **Finanças** (inspirado no [Aurum2.0](https://github.com/ArthurWillers/Aurum2.0))
 - [x] **Acertos** (Gestão de "Eu Devo" e "Me Deve", inspirado no [BalanceFlow](https://github.com/ArthurWillers/BalanceFlow))
 - [ ] **Veículos** (inspirado no [Drivvo](https://www.drivvo.com/))
-- [ ] **Calendário & Agenda** (Eventos, compromissos e lembretes integrados aos demais módulos)
 - [ ] **Saúde**
 - [ ] **Treinos** (junto ao módulo de Saúde, inspirado no [openGym](https://opengym.duarte-santos.ch/))
 - [ ] **Patrimônio**

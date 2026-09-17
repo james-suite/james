@@ -18,6 +18,5 @@ Visão geral dos módulos desenvolvidos e planejados para o James.
 ## Módulos Futuros
 
 - **Veículos**: Inspirado no [Drivvo](https://www.drivvo.com/), com foco em abastecimentos, despesas, manutenções, custos e lembretes.
-- **Calendário & Agenda**: Centralização de eventos, compromissos e lembretes, com integração progressiva aos demais módulos.
 - **Saúde & Treinos**: O módulo de treinos será desenvolvido junto ao módulo de Saúde e inspirado no [openGym](https://opengym.duarte-santos.ch/), contemplando rotinas, exercícios, progressão e histórico de evolução.
-- **Patrimônio**: Cadastro e acompanhamento de bens e evolução patrimonial.
+- Patrimônio

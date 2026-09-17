@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinancialTagController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
@@ -10,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/login');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::view('/dashboard', 'dashboard')->name('dashboard');
     Route::view('/settings', 'settings')->name('settings');
 
     Route::get('/ui/icons/{name}', [FinancialTagController::class, 'fetchIcon'])->name('ui.icons.show');
