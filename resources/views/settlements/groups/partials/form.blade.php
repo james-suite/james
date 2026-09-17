@@ -9,6 +9,8 @@
         : null;
     $selectedAccountId = old('financial_account_id', $existingAccountId ?? $singleAccountId);
     $selectedCardId = old('financial_credit_card_id', $existingCardId ?? $singleCardId);
+    $calculatedFieldClasses = 'flex h-11 w-full items-center rounded-xl border border-neutral-200 bg-neutral-100 px-4 text-sm font-medium text-neutral-500 shadow-xs';
+    $calculatedAmountClasses = $calculatedFieldClasses . ' justify-end text-neutral-700';
 @endphp
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
@@ -28,7 +30,7 @@
                         </div>
                         <div x-show="mode === 'exact'" style="display: none;">
                             <label class="block text-sm font-medium text-neutral-700 mb-1">Valor Total (R$)</label>
-                            <div class="w-full border border-neutral-200 text-sm rounded-xl block py-2.5 px-4 bg-neutral-100 text-neutral-500 font-medium">
+                            <div class="{{ $calculatedFieldClasses }}">
                                 <span x-text="formatMoney(calculatedTotal)"></span>
                             </div>
                             <input type="hidden" name="total_amount" :value="calculatedTotal.toFixed(2)">
@@ -59,12 +61,12 @@
                     </div>
                     <div class="w-36 shrink-0">
                         <template x-if="mode === 'equal'">
-                            <div class="w-full border border-neutral-200 text-sm rounded-xl block py-2.5 px-4 bg-neutral-100 text-neutral-700 font-medium text-right">
+                            <div class="{{ $calculatedAmountClasses }}">
                                 <span x-text="formatMoney(calculatedMyAmount)"></span>
                             </div>
                         </template>
                         <template x-if="mode === 'exact'">
-                            <x-form-input name="my_amount" :currency="true" placeholder="0,00" x-model="myAmount" />
+                            <x-form-input name="my_amount" :currency="true" placeholder="0,00" class="text-right font-medium" x-model="myAmount" />
                         </template>
                         <input x-show="mode === 'equal'" type="hidden" name="my_amount" :value="calculatedMyAmount.toFixed(2)">
                     </div>
@@ -87,13 +89,13 @@
                         <div class="w-36 shrink-0">
                             <input type="hidden" :name="'contacts[' + index + '][id]'" :value="contact.id">
                             <template x-if="mode === 'equal'">
-                                <div class="w-full border border-neutral-200 text-sm rounded-xl block py-2.5 px-4 bg-neutral-100 text-neutral-700 font-medium text-right">
+                                <div class="{{ $calculatedAmountClasses }}">
                                     <span x-text="formatMoney(parseFloat(contact.amount) || 0)"></span>
                                     <input type="hidden" :name="'contacts[' + index + '][amount]'" :value="contact.amount">
                                 </div>
                             </template>
                             <template x-if="mode === 'exact'">
-                                <x-form-input :name="''" x-bind:name="'contacts[' + index + '][amount]'" :currency="true" placeholder="0,00" x-model="contact.amount" />
+                                <x-form-input :name="''" x-bind:name="'contacts[' + index + '][amount]'" :currency="true" placeholder="0,00" class="text-right font-medium" x-model="contact.amount" />
                             </template>
                         </div>
                     </div>
