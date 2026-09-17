@@ -56,6 +56,31 @@ it('treats a settled contact balance as zero despite floating-point precision', 
         ->assertViewHas('settleUrl', null);
 });
 
+it('ignores an excess payment before calculating a future debt', function () {
+    $contact = Contact::factory()->create();
+
+    Settlement::create(['contact_id' => $contact->id, 'type' => SettlementType::TheyOwe->value, 'amount' => 70, 'description' => 'Dívida inicial', 'date' => '2026-09-01']);
+    Settlement::create(['contact_id' => $contact->id, 'type' => SettlementType::TheyPaid->value, 'amount' => 80, 'description' => 'Pagamento excedente', 'date' => '2026-09-02']);
+    Settlement::create(['contact_id' => $contact->id, 'type' => SettlementType::TheyOwe->value, 'amount' => 20, 'description' => 'Nova dívida', 'date' => '2026-09-03']);
+
+    $this->get(route('settlements.index'))
+        ->assertSuccessful()
+        ->assertViewHas('toReceive', 20.0)
+        ->assertViewHas('toPay', 0.0)
+        ->assertViewHas('contactOptions', fn ($options): bool => $options->first()['net_balance'] === 20.0);
+
+    $this->get(route('settlements.contact.show', $contact))
+        ->assertSuccessful()
+        ->assertViewHas('toReceive', 20.0)
+        ->assertViewHas('toPay', 0.0)
+        ->assertViewHas('netBalance', 20.0);
+
+    $this->get(route('settlements.create', ['contact' => $contact, 'settle' => 1]))
+        ->assertSuccessful()
+        ->assertViewHas('settlement', fn (Settlement $settlement): bool => $settlement->type === SettlementType::TheyPaid
+            && $settlement->amount === 20.0);
+});
+
 it('can view settlement details', function () {
     $contact = Contact::factory()->create();
     $settlement = Settlement::create([
