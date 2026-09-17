@@ -95,7 +95,7 @@ class SendDueTodayAlerts extends Command
     }
 
     /**
-     * Retorna lançamentos pendentes do período e recorrências materializadas hoje.
+     * Retorna os lançamentos pendentes do período e os já efetivados com data de hoje.
      *
      * @return EloquentCollection<int, FinancialTransaction>
      */
@@ -110,8 +110,7 @@ class SendDueTodayAlerts extends Command
                 $query->where('status', TransactionStatus::Pending)
                     ->orWhere(function ($query) use ($startDate): void {
                         $query->where('status', TransactionStatus::Posted)
-                            ->whereDate('date', $startDate)
-                            ->whereNotNull('financial_recurrence_id');
+                            ->whereDate('date', $startDate);
                     });
             })
             ->orderBy('date')
