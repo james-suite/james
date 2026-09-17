@@ -29,6 +29,7 @@ it('details pending income and expenses due today and tomorrow', function () {
         'amount' => 2500.00,
         'description' => 'Pró-labore',
         'date' => Carbon::today(),
+        'created_at' => Carbon::yesterday()->setTime(18, 0),
         'status' => TransactionStatus::Pending,
     ]);
 
@@ -58,7 +59,35 @@ it('details pending income and expenses due today and tomorrow', function () {
     });
 });
 
-it('does not include manually posted transactions created for today', function () {
+it('does not notify about manually created transactions due today', function () {
+    $account = FinancialAccount::factory()->create(['name' => 'Conta Corrente']);
+
+    FinancialTransaction::factory()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'expense',
+        'amount' => 180.00,
+        'description' => 'Compra de madrugada',
+        'date' => Carbon::today(),
+        'created_at' => Carbon::today()->setTime(2, 0),
+        'status' => TransactionStatus::Pending,
+    ]);
+
+    FinancialTransaction::factory()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'expense',
+        'amount' => 180.00,
+        'description' => 'Compra já efetivada',
+        'date' => Carbon::today(),
+        'created_at' => Carbon::today()->setTime(2, 0),
+        'status' => TransactionStatus::Posted,
+    ]);
+
+    $this->artisan('finance:due-today-alerts')->assertSuccessful();
+
+    Notification::assertNothingSent();
+});
+
+it('includes transactions due today that existed before the rollover', function () {
     $account = FinancialAccount::factory()->create(['name' => 'Conta Corrente']);
 
     FinancialTransaction::factory()->create([
@@ -67,12 +96,16 @@ it('does not include manually posted transactions created for today', function (
         'amount' => 180.00,
         'description' => 'Energia',
         'date' => Carbon::today(),
+        'created_at' => Carbon::yesterday()->setTime(18, 0),
         'status' => TransactionStatus::Posted,
     ]);
 
     $this->artisan('finance:due-today-alerts')->assertSuccessful();
 
-    Notification::assertNothingSent();
+    Notification::assertSentTo($this->user, DueTodayNotification::class, function ($notification) {
+        return $notification->alert['total_items'] === 1
+            && $notification->alert['days'][0]['expenses'][0]['description'] === 'Energia';
+    });
 });
 
 it('details account recurrences that have not been materialized', function () {
@@ -235,6 +268,7 @@ it('does not resend the same due alert unless forced', function () {
         'type' => 'expense',
         'amount' => 90.00,
         'date' => Carbon::today(),
+        'created_at' => Carbon::yesterday()->setTime(18, 0),
         'status' => TransactionStatus::Pending,
     ]);
 
