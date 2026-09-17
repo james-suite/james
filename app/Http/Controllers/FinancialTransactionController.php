@@ -165,7 +165,8 @@ class FinancialTransactionController extends Controller
                         Carbon::parse($validated['date']),
                         $validated['amount'],
                         $validated['installments'],
-                        $validated['description']
+                        $validated['description'],
+                        $validated['type'],
                     );
                 } else {
                     $account = FinancialAccount::findOrFail($validated['financial_account_id']);

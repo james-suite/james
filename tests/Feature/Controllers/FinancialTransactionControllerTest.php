@@ -133,7 +133,32 @@ it('stores a transaction only on the selected target when both ids are submitted
         ->and(FinancialCreditCardInvoice::query()->count())->toBe(0);
 });
 
-it('rejects income installments on credit cards', function () {
+it('creates income installments on a financial account', function () {
+    $account = FinancialAccount::factory()->create();
+
+    $this->post(route('financial.transactions.store'), [
+        'mode' => 'installment',
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'type' => 'income',
+        'amount' => 300,
+        'description' => 'Receita parcelada',
+        'date' => Carbon::today()->format('Y-m-d'),
+        'installments' => 3,
+    ])->assertRedirect(route('financial.transactions.index'));
+
+    $transactions = FinancialTransaction::query()
+        ->orderBy('installment_current')
+        ->get();
+
+    expect($transactions)->toHaveCount(3)
+        ->and($transactions->pluck('type')->unique()->all())->toBe(['income'])
+        ->and($transactions->pluck('financial_account_id')->unique()->all())->toBe([$account->id])
+        ->and($transactions->map(fn (FinancialTransaction $transaction): float => (float) $transaction->amount)->all())
+        ->toBe([100.0, 100.0, 100.0]);
+});
+
+it('creates income installments on a credit card', function () {
     $card = FinancialCreditCard::factory()->create();
 
     $this->post(route('financial.transactions.store'), [
@@ -143,11 +168,26 @@ it('rejects income installments on credit cards', function () {
         'type' => 'income',
         'amount' => 300,
         'description' => 'Receita parcelada',
-        'date' => now()->format('Y-m-d'),
+        'date' => Carbon::today()->format('Y-m-d'),
         'installments' => 3,
-    ])->assertSessionHasErrors('type');
+    ])->assertRedirect(route('financial.transactions.index'));
 
-    expect(FinancialTransaction::query()->count())->toBe(0);
+    $transactions = FinancialTransaction::query()
+        ->orderBy('installment_current')
+        ->get();
+    $invoices = FinancialCreditCardInvoice::query()
+        ->whereIn('id', $transactions->pluck('financial_credit_card_invoice_id'))
+        ->orderBy('id')
+        ->get();
+
+    expect($transactions)->toHaveCount(3)
+        ->and($transactions->pluck('type')->unique()->all())->toBe(['income'])
+        ->and($transactions->pluck('financial_account_id')->filter()->all())->toBe([])
+        ->and($transactions->pluck('financial_credit_card_invoice_id')->unique()->count())->toBe(3)
+        ->and($transactions->map(fn (FinancialTransaction $transaction): float => (float) $transaction->amount)->all())
+        ->toBe([100.0, 100.0, 100.0])
+        ->and($invoices->map(fn (FinancialCreditCardInvoice $invoice): float => $invoice->total())->all())
+        ->toBe([-100.0, -100.0, -100.0]);
 });
 
 it('does not assign a primary tag to a transaction created with items', function () {
