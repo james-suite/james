@@ -45,11 +45,17 @@ it('does not carry an excess sent payment into a future debt', function () {
     ]);
 });
 
-it('uses the record id to order movements from the same date', function () {
+it('nets movements from the same date regardless of their record id', function () {
     $balance = (new SettlementBalanceCalculator)->calculate([
-        settlementForBalance(2, SettlementType::TheyOwe, 20, '2026-09-01'),
-        settlementForBalance(1, SettlementType::TheyPaid, 80, '2026-09-01'),
+        settlementForBalance(2, SettlementType::TheyOwe, 12, '2026-09-01'),
+        settlementForBalance(1, SettlementType::TheyPaid, 12, '2026-09-01'),
+        settlementForBalance(4, SettlementType::IOwe, 18, '2026-09-02'),
+        settlementForBalance(3, SettlementType::IPaid, 18, '2026-09-02'),
     ]);
 
-    expect($balance['toReceive'])->toBe(20.0);
+    expect($balance)->toBe([
+        'toReceive' => 0.0,
+        'toPay' => 0.0,
+        'netBalance' => 0.0,
+    ]);
 });

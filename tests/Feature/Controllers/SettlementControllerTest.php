@@ -81,6 +81,29 @@ it('ignores an excess payment before calculating a future debt', function () {
             && $settlement->amount === 20.0);
 });
 
+it('settles movements from the same date even when the payment was recorded first', function () {
+    $contact = Contact::factory()->create();
+
+    Settlement::create(['contact_id' => $contact->id, 'type' => SettlementType::TheyPaid->value, 'amount' => 12, 'description' => 'Quitação de saldo', 'date' => '2026-07-25']);
+    Settlement::create(['contact_id' => $contact->id, 'type' => SettlementType::TheyOwe->value, 'amount' => 12, 'description' => 'Enxada host', 'date' => '2026-07-25']);
+    Settlement::create(['contact_id' => $contact->id, 'type' => SettlementType::TheyOwe->value, 'amount' => 16.66, 'description' => 'Pizza', 'date' => '2026-09-11']);
+    Settlement::create(['contact_id' => $contact->id, 'type' => SettlementType::TheyPaid->value, 'amount' => 16.67, 'description' => 'Quitação de saldo', 'date' => '2026-09-12']);
+
+    $this->get(route('settlements.index'))
+        ->assertSuccessful()
+        ->assertViewHas('toReceive', 0.0)
+        ->assertViewHas('toPay', 0.0)
+        ->assertViewHas('netBalance', 0.0)
+        ->assertViewHas('contactOptions', fn ($options): bool => $options->first()['net_balance'] === 0.0);
+
+    $this->get(route('settlements.contact.show', $contact))
+        ->assertSuccessful()
+        ->assertViewHas('toReceive', 0.0)
+        ->assertViewHas('toPay', 0.0)
+        ->assertViewHas('netBalance', 0.0)
+        ->assertViewHas('settleUrl', null);
+});
+
 it('can view settlement details', function () {
     $contact = Contact::factory()->create();
     $settlement = Settlement::create([
