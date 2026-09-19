@@ -7,7 +7,7 @@
 
 @php
     $baseClasses =
-        'button-scale cursor-pointer inline-flex items-center justify-center font-semibold px-3 py-2 min-h-11 text-base lg:text-sm [&>svg]:size-5 lg:[&>svg]:size-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed gap-1.5 lg:gap-1';
+        'button-scale relative cursor-pointer inline-flex items-center justify-center font-semibold px-3 py-2 min-h-11 text-base lg:text-sm [&>svg]:size-5 lg:[&>svg]:size-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed gap-1.5 lg:gap-1';
 
     $colorClasses = match ($color) {
         'red' => 'bg-red-600 not-disabled:hover:bg-red-700 text-white border-transparent',
@@ -36,11 +36,11 @@
     </a>
 @else
     <button type="{{ $type }}" {{ $attributes->merge(['class' => $finalClasses]) }} :disabled="typeof loading !== 'undefined' && loading">
-        {{-- O spinner é mostrado quando 'loading' é true --}}
-        <x-heroicon-o-arrow-path class="h-6 w-6 animate-spin" style="display: none;" x-show="typeof loading !== 'undefined' && loading" />
+        {{-- O spinner é mostrado quando 'loading' é true. --}}
+        <x-heroicon-o-arrow-path class="pointer-events-none absolute inset-0 m-auto h-6 w-6 animate-spin" style="display: none;" x-show="typeof loading !== 'undefined' && loading" />
 
-        {{-- O conteúdo original é mostrado quando 'loading' é false --}}
-        <span class="inline-flex items-center gap-1" x-show="typeof loading === 'undefined' || !loading">
+        {{-- O conteúdo mantém as dimensões do botão durante o loading. --}}
+        <span class="inline-flex items-center gap-1" x-bind:class="typeof loading !== 'undefined' && loading && 'invisible'">
             {{ $slot }}
         </span>
     </button>
