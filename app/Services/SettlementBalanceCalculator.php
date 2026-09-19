@@ -17,23 +17,27 @@ class SettlementBalanceCalculator
         $toReceiveInCents = 0;
         $toPayInCents = 0;
 
-        $orderedSettlements = collect($settlements)->sort(function (Settlement $left, Settlement $right): int {
-            $dateComparison = $left->date->toDateString() <=> $right->date->toDateString();
+        $settlementsByDate = collect($settlements)
+            ->groupBy(fn (Settlement $settlement): string => $settlement->date->toDateString())
+            ->sortKeys();
 
-            return $dateComparison !== 0
-                ? $dateComparison
-                : $left->getKey() <=> $right->getKey();
-        });
+        foreach ($settlementsByDate as $dailySettlements) {
+            $toReceiveChangeInCents = 0;
+            $toPayChangeInCents = 0;
 
-        foreach ($orderedSettlements as $settlement) {
-            $amountInCents = (int) round($settlement->amount * 100);
+            foreach ($dailySettlements as $settlement) {
+                $amountInCents = (int) round($settlement->amount * 100);
 
-            match ($settlement->type) {
-                SettlementType::TheyOwe => $toReceiveInCents += $amountInCents,
-                SettlementType::TheyPaid => $toReceiveInCents = max(0, $toReceiveInCents - $amountInCents),
-                SettlementType::IOwe => $toPayInCents += $amountInCents,
-                SettlementType::IPaid => $toPayInCents = max(0, $toPayInCents - $amountInCents),
-            };
+                match ($settlement->type) {
+                    SettlementType::TheyOwe => $toReceiveChangeInCents += $amountInCents,
+                    SettlementType::TheyPaid => $toReceiveChangeInCents -= $amountInCents,
+                    SettlementType::IOwe => $toPayChangeInCents += $amountInCents,
+                    SettlementType::IPaid => $toPayChangeInCents -= $amountInCents,
+                };
+            }
+
+            $toReceiveInCents = max(0, $toReceiveInCents + $toReceiveChangeInCents);
+            $toPayInCents = max(0, $toPayInCents + $toPayChangeInCents);
         }
 
         return [
