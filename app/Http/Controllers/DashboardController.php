@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\SettlementType;
 use App\Models\Contact;
 use App\Services\FinanceDashboardService;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\SettlementBalanceCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -13,7 +12,10 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __construct(private FinanceDashboardService $financeDashboardService) {}
+    public function __construct(
+        private FinanceDashboardService $financeDashboardService,
+        private SettlementBalanceCalculator $settlementBalanceCalculator,
+    ) {}
 
     public function __invoke(Request $request): View
     {
@@ -40,18 +42,22 @@ class DashboardController extends Controller
     {
         $contacts = Contact::query()
             ->select(['id', 'name'])
-            ->with('media')
+            ->with([
+                'media',
+                'settlements' => fn ($query) => $query
+                    ->select(['id', 'contact_id', 'type', 'amount', 'date'])
+                    ->orderBy('date')
+                    ->orderBy('id'),
+            ])
             ->notSettlementArchived()
             ->whereHas('settlements')
-            ->withSum(['settlements as they_owe' => fn (Builder $query) => $query->where('type', SettlementType::TheyOwe->value)], 'amount')
-            ->withSum(['settlements as they_paid' => fn (Builder $query) => $query->where('type', SettlementType::TheyPaid->value)], 'amount')
-            ->withSum(['settlements as i_owe' => fn (Builder $query) => $query->where('type', SettlementType::IOwe->value)], 'amount')
-            ->withSum(['settlements as i_paid' => fn (Builder $query) => $query->where('type', SettlementType::IPaid->value)], 'amount')
             ->get()
             ->map(function (Contact $contact): Contact {
-                $contact->to_receive = max(0, round((float) $contact->they_owe - (float) $contact->they_paid, 2));
-                $contact->to_pay = max(0, round((float) $contact->i_owe - (float) $contact->i_paid, 2));
-                $contact->net_balance = round($contact->to_receive - $contact->to_pay, 2);
+                $balance = $this->settlementBalanceCalculator->calculate($contact->settlements);
+
+                $contact->to_receive = $balance['toReceive'];
+                $contact->to_pay = $balance['toPay'];
+                $contact->net_balance = $balance['netBalance'];
 
                 return $contact;
             });

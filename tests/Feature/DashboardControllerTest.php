@@ -62,6 +62,40 @@ it('shows module summaries using the effective net settlement balance', function
         ->assertViewHas('contactCount', 1);
 });
 
+it('ignores an excess settlement payment before calculating a future dashboard debt', function () {
+    $contact = Contact::factory()->create(['name' => 'Maria Silva']);
+
+    Settlement::factory()->create([
+        'contact_id' => $contact->id,
+        'type' => SettlementType::TheyOwe->value,
+        'amount' => 70,
+        'description' => 'Dívida inicial',
+        'date' => '2026-09-01',
+    ]);
+    Settlement::factory()->create([
+        'contact_id' => $contact->id,
+        'type' => SettlementType::TheyPaid->value,
+        'amount' => 80,
+        'description' => 'Pagamento excedente',
+        'date' => '2026-09-02',
+    ]);
+    Settlement::factory()->create([
+        'contact_id' => $contact->id,
+        'type' => SettlementType::TheyOwe->value,
+        'amount' => 20,
+        'description' => 'Nova dívida',
+        'date' => '2026-09-03',
+    ]);
+
+    $this->get(route('dashboard'))
+        ->assertSuccessful()
+        ->assertViewHas('settlementSummary', fn (array $summary): bool => $summary['toReceive'] === 20.0
+            && $summary['toPay'] === 0.0
+            && $summary['netBalance'] === 20.0
+            && $summary['pendingCount'] === 1)
+        ->assertViewHas('settlements', fn ($settlements): bool => $settlements->first()->net_balance === 20.0);
+});
+
 it('requires authentication', function () {
     auth()->logout();
 
