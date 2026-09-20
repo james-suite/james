@@ -23,7 +23,8 @@ Os ícones do projeto são provenientes do [Heroicons](https://heroicons.com/).
 
 ## Documentação
 
-A documentação oficial do projeto está disponível em [https://arthurwillers.github.io/james/](https://arthurwillers.github.io/james/).
+A documentação oficial do projeto está disponível em [sge-suite.github.io/docs](https://sge-suite.github.io/docs/).
+As fontes da documentação ficam no repositório [sge-suite/docs](https://github.com/sge-suite/docs).
 
 ## Licença
 
