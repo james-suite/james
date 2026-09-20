@@ -7,7 +7,6 @@
             :value="formatCurrency($financialSummary['currentBalance'])"
             icon="heroicon-o-banknotes"
             :color="$financialSummary['currentBalance'] > 0 ? 'green' : ($financialSummary['currentBalance'] < 0 ? 'red' : 'neutral')"
-            :hide-icon-on-mobile="false"
             :href="route('financial.dashboard')"
         >
             Saldo atual
@@ -18,7 +17,6 @@
             :value="formatCurrency(abs($settlementSummary['netBalance']))"
             icon="heroicon-o-scale"
             :color="$settlementSummary['netBalance'] > 0 ? 'green' : ($settlementSummary['netBalance'] < 0 ? 'red' : 'neutral')"
-            :hide-icon-on-mobile="false"
             :href="route('settlements.index')"
         >
             {{ $settlementSummary['netBalance'] > 0 ? 'Você tem a receber' : ($settlementSummary['netBalance'] < 0 ? 'Você tem a pagar' : 'Tudo quitado') }}
@@ -29,7 +27,6 @@
             :value="$contactCount"
             icon="heroicon-o-users"
             color="neutral"
-            :hide-icon-on-mobile="false"
             :href="route('contacts.index')"
         >
             Pessoas cadastradas
@@ -40,7 +37,6 @@
             :value="$unreadNotificationCount"
             icon="heroicon-o-bell"
             :color="$unreadNotificationCount > 0 ? 'red' : 'neutral'"
-            :hide-icon-on-mobile="false"
             :href="route('notifications.index')"
         >
             {{ $unreadNotificationCount === 1 ? 'Não lida' : 'Não lidas' }}
