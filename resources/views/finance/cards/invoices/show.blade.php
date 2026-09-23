@@ -13,9 +13,36 @@
         $total = $invoice->total();
         $isFavorable = $total < 0;
         $remaining = max(0, $total - $invoice->amount_paid);
+        $canReopenInvoice = $invoice->amount_paid > 0;
+        $canPayInvoice = $status !== App\Enums\InvoiceStatus::Paid && !$isFavorable && $total > 0;
+        $hasOtherActions = $canReopenInvoice || $canPayInvoice;
     @endphp
 
     <x-page-header :title="'Fatura de ' . formatMonthYearFull($invoice->reference_month)">
+        <x-slot:titleSuffix>
+            <x-tooltip text="Fatura anterior" class="inline-flex">
+                <x-button
+                    :href="$previousInvoice ? route('financial.cards.invoices.show', [$card, $previousInvoice]) : null"
+                    color="outline"
+                    class="bg-white"
+                    aria-label="Fatura anterior"
+                    :disabled="!$previousInvoice">
+                    <x-heroicon-o-chevron-left class="size-4" />
+                </x-button>
+            </x-tooltip>
+
+            <x-tooltip text="Próxima fatura" class="inline-flex">
+                <x-button
+                    :href="$nextInvoice ? route('financial.cards.invoices.show', [$card, $nextInvoice]) : null"
+                    color="outline"
+                    class="bg-white"
+                    aria-label="Próxima fatura"
+                    :disabled="!$nextInvoice">
+                    <x-heroicon-o-chevron-right class="size-4" />
+                </x-button>
+            </x-tooltip>
+        </x-slot:titleSuffix>
+
         <x-slot:subtitle>
             <div class="flex items-center gap-2 mt-2">
                 <x-badge :color="$status->color()">
@@ -26,19 +53,27 @@
         </x-slot:subtitle>
 
         <x-modal.trigger name="edit-invoice-modal">
-            <x-button type="button" color="outline" class="bg-white">
-                <x-heroicon-o-pencil-square class="size-4" />
-                <span class="hidden sm:inline">Editar Fatura</span>
-            </x-button>
+            <x-tooltip text="Editar fatura" :class="$hasOtherActions ? 'inline-flex' : 'flex w-full sm:w-auto'">
+                <x-button
+                    type="button"
+                    color="outline"
+                    :class="$hasOtherActions ? 'bg-white' : 'w-full bg-white sm:w-auto'"
+                    aria-label="Editar fatura">
+                    <x-heroicon-o-pencil-square class="size-4" />
+                    <span @class(['hidden sm:inline' => $hasOtherActions])>Editar Fatura</span>
+                </x-button>
+            </x-tooltip>
         </x-modal.trigger>
 
-        @if($invoice->amount_paid > 0)
-            <x-modal.trigger name="unpay-invoice-modal">
-                <x-button type="button" color="outline" class="bg-white text-orange-600 hover:bg-orange-50 border-orange-200">
-                    <x-heroicon-o-arrow-uturn-left class="size-4" />
-                    <span class="hidden sm:inline">Reabrir Fatura</span>
-                </x-button>
-            </x-modal.trigger>
+        @if($canReopenInvoice)
+            <div class="flex-1 sm:flex-initial">
+                <x-modal.trigger name="unpay-invoice-modal">
+                    <x-button type="button" color="outline" class="w-full bg-white text-orange-600 hover:bg-orange-50 border-orange-200 sm:w-auto">
+                        <x-heroicon-o-arrow-uturn-left class="size-4" />
+                        <span>Reabrir Fatura</span>
+                    </x-button>
+                </x-modal.trigger>
+            </div>
 
             <x-modal
                 name="unpay-invoice-modal"
@@ -54,13 +89,15 @@
             </x-modal>
         @endif
 
-        @if($status !== App\Enums\InvoiceStatus::Paid && !$isFavorable && $total > 0)
-            <x-modal.trigger name="pay-invoice-modal">
-                <x-button type="button" class="w-full sm:w-auto">
-                    <x-heroicon-o-currency-dollar class="size-4" />
-                    <span class="whitespace-nowrap">Registrar Pagamento</span>
-                </x-button>
-            </x-modal.trigger>
+        @if($canPayInvoice)
+            <div class="flex-1 sm:flex-initial">
+                <x-modal.trigger name="pay-invoice-modal">
+                    <x-button type="button" class="w-full sm:w-auto">
+                        <x-heroicon-o-currency-dollar class="size-4" />
+                        <span class="whitespace-nowrap">Registrar Pagamento</span>
+                    </x-button>
+                </x-modal.trigger>
+            </div>
         @endif
     </x-page-header>
 
@@ -115,7 +152,7 @@
         </div>
     @endif
 
-    @if($status !== App\Enums\InvoiceStatus::Paid && !$isFavorable && $total > 0)
+    @if($canPayInvoice)
         <!-- Modal Pagamento -->
         <x-modal name="pay-invoice-modal" title="Pagar Fatura">
             <x-slot name="content">
