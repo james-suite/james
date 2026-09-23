@@ -24,7 +24,7 @@ class RecentTransactions extends Component
         $this->model = $model;
 
         $this->recentTransactions = $model->transactions()
-            ->with(['invoice.creditCard', 'account', 'tags'])
+            ->with(['invoice.creditCard', 'account', 'media', 'tags'])
             ->latest('date')
             ->latest('updated_at')
             ->limit($limit)

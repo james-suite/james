@@ -8,15 +8,16 @@
     </div>
 
     <x-page-header title="Detalhes do Cartão">
-        <x-back-button fallback="{{ route('financial.cards.index') }}" />
+        <x-back-button fallback="{{ route('financial.cards.index') }}" class="flex-1 sm:flex-initial" />
 
-        <x-button color="outline" href="{{ route('financial.cards.edit', $card) }}" class="bg-white">
+        <x-button color="outline" href="{{ route('financial.cards.edit', $card) }}" class="bg-white flex-1 sm:flex-initial">
             <x-heroicon-o-pencil-square class="size-4" />
             Editar
         </x-button>
 
         <x-modal.delete
             action="{{ route('financial.cards.destroy', $card) }}"
+            button-class="flex-1 sm:flex-initial"
             item-name="o cartão"
             item-desc="{{ $card->name }}"
             title="Excluir Cartão"

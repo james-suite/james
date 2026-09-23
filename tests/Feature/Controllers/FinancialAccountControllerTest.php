@@ -6,6 +6,7 @@ use App\Models\FinancialRecurrence;
 use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -18,6 +19,22 @@ it('can list accounts', function () {
     $this->get(route('financial.accounts.index'))
         ->assertSuccessful()
         ->assertViewIs('finance.accounts.index');
+});
+
+it('can view an account with recent transactions', function () {
+    if (DB::connection()->getDriverName() === 'sqlite') {
+        DB::connection()->getPdo()->sqliteCreateFunction(
+            'GREATEST',
+            fn (...$values) => max($values),
+        );
+    }
+
+    $account = FinancialAccount::factory()->create();
+    FinancialTransaction::factory()->create(['financial_account_id' => $account->id]);
+
+    $this->get(route('financial.accounts.show', $account))
+        ->assertSuccessful()
+        ->assertViewIs('finance.accounts.show');
 });
 
 it('lists accounts by balance group and amount', function () {
