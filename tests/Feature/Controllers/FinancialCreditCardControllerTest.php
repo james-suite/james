@@ -5,6 +5,7 @@ use App\Enums\TransactionStatus;
 use App\Models\FinancialAccount;
 use App\Models\FinancialCreditCard;
 use App\Models\FinancialCreditCardInvoice;
+use App\Models\FinancialRecurrence;
 use App\Models\FinancialTransaction;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -86,6 +87,49 @@ it('can soft delete credit card', function () {
     $this->assertSoftDeleted($card);
 });
 
+it('cannot delete a credit card with an invoice and transactions', function () {
+    $card = FinancialCreditCard::factory()->create();
+    $invoice = FinancialCreditCardInvoice::factory()->for($card, 'creditCard')->create();
+    $transaction = FinancialTransaction::factory()->create([
+        'financial_credit_card_invoice_id' => $invoice->id,
+        'financial_account_id' => null,
+    ]);
+
+    $this->delete(route('financial.cards.destroy', $card))
+        ->assertRedirect(route('financial.cards.show', $card))
+        ->assertSessionHas('error');
+
+    $this->assertNotSoftDeleted($card);
+    $this->assertModelExists($invoice);
+    $this->assertModelExists($transaction);
+});
+
+it('cannot delete a credit card with an empty invoice', function () {
+    $card = FinancialCreditCard::factory()->create();
+    $invoice = FinancialCreditCardInvoice::factory()->for($card, 'creditCard')->create();
+
+    $this->delete(route('financial.cards.destroy', $card))
+        ->assertRedirect(route('financial.cards.show', $card))
+        ->assertSessionHas('error');
+
+    $this->assertNotSoftDeleted($card);
+    $this->assertModelExists($invoice);
+});
+
+it('cannot delete a credit card with a recurrence, including a trashed recurrence', function () {
+    $card = FinancialCreditCard::factory()->create();
+    FinancialRecurrence::factory()->create([
+        'financial_account_id' => null,
+        'financial_credit_card_id' => $card->id,
+    ])->delete();
+
+    $this->delete(route('financial.cards.destroy', $card))
+        ->assertRedirect(route('financial.cards.show', $card))
+        ->assertSessionHas('error');
+
+    $this->assertNotSoftDeleted($card);
+});
+
 it('can list trashed credit cards', function () {
     FinancialCreditCard::factory()->count(2)->trashed()->create();
 
@@ -112,6 +156,32 @@ it('can force delete credit card', function () {
     $this->assertDatabaseMissing('financial_credit_cards', [
         'id' => $card->id,
     ]);
+});
+
+it('cannot force delete a credit card with an invoice', function () {
+    $card = FinancialCreditCard::factory()->trashed()->create();
+    $invoice = FinancialCreditCardInvoice::factory()->for($card, 'creditCard')->create();
+
+    $this->delete(route('financial.cards.forceDestroy', $card))
+        ->assertRedirect(route('financial.cards.trashed'))
+        ->assertSessionHas('error');
+
+    $this->assertSoftDeleted($card);
+    $this->assertModelExists($invoice);
+});
+
+it('cannot force delete a credit card with a trashed recurrence', function () {
+    $card = FinancialCreditCard::factory()->trashed()->create();
+    FinancialRecurrence::factory()->create([
+        'financial_account_id' => null,
+        'financial_credit_card_id' => $card->id,
+    ])->delete();
+
+    $this->delete(route('financial.cards.forceDestroy', $card))
+        ->assertRedirect(route('financial.cards.trashed'))
+        ->assertSessionHas('error');
+
+    $this->assertSoftDeleted($card);
 });
 
 it('index shows current open invoice, not the previous paid one', function () {

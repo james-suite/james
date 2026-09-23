@@ -116,6 +116,12 @@ class FinancialCreditCardController extends Controller
      */
     public function destroy(FinancialCreditCard $card): RedirectResponse
     {
+        if ($this->hasLinkedRecords($card)) {
+            return redirect()
+                ->route('financial.cards.show', $card)
+                ->with('error', 'Não é possível excluir este cartão enquanto ele possuir faturas ou recorrências vinculadas. Remova os vínculos primeiro.');
+        }
+
         $card->delete();
 
         return redirect()
@@ -158,7 +164,7 @@ class FinancialCreditCardController extends Controller
     {
         $card = FinancialCreditCard::withTrashed()->findOrFail($id);
 
-        if ($card->invoices()->exists() || $card->recurrences()->exists()) {
+        if ($this->hasLinkedRecords($card)) {
             return redirect()
                 ->route('financial.cards.trashed')
                 ->with('error', 'Não é possível excluir permanentemente este cartão pois ele possui faturas ou recorrências vinculadas. Remova os vínculos primeiro.');
@@ -169,5 +175,10 @@ class FinancialCreditCardController extends Controller
         return redirect()
             ->route('financial.cards.trashed')
             ->with('success', 'Cartão de crédito excluído permanentemente.');
+    }
+
+    private function hasLinkedRecords(FinancialCreditCard $card): bool
+    {
+        return $card->invoices()->exists() || $card->recurrences()->withTrashed()->exists();
     }
 }
