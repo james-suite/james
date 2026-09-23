@@ -17,9 +17,41 @@ it('can view invoice details', function () {
         'financial_credit_card_id' => $card->id,
     ]);
 
-    $this->get(route('financial.cards.invoices.show', [$card, $invoice]))
+    $response = $this->get(route('financial.cards.invoices.show', [$card, $invoice]))
         ->assertSuccessful()
         ->assertViewIs('finance.cards.invoices.show');
+
+    expect($response->viewData('previousInvoice'))->toBeNull()
+        ->and($response->viewData('nextInvoice'))->toBeNull();
+});
+
+it('provides adjacent invoices from the same card for navigation', function () {
+    $card = FinancialCreditCard::factory()->create();
+    $otherCard = FinancialCreditCard::factory()->create();
+
+    $previousInvoice = FinancialCreditCardInvoice::factory()->create([
+        'financial_credit_card_id' => $card->id,
+        'reference_month' => '2026-07-01',
+    ]);
+    $invoice = FinancialCreditCardInvoice::factory()->create([
+        'financial_credit_card_id' => $card->id,
+        'reference_month' => '2026-09-01',
+    ]);
+    $nextInvoice = FinancialCreditCardInvoice::factory()->create([
+        'financial_credit_card_id' => $card->id,
+        'reference_month' => '2026-11-01',
+    ]);
+
+    FinancialCreditCardInvoice::factory()->create([
+        'financial_credit_card_id' => $otherCard->id,
+        'reference_month' => '2026-10-01',
+    ]);
+
+    $response = $this->get(route('financial.cards.invoices.show', [$card, $invoice]))
+        ->assertSuccessful();
+
+    expect($response->viewData('previousInvoice')->is($previousInvoice))->toBeTrue()
+        ->and($response->viewData('nextInvoice')->is($nextInvoice))->toBeTrue();
 });
 
 it('can update invoice notes and status', function () {

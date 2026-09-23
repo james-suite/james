@@ -27,7 +27,17 @@ class FinancialCreditCardInvoiceController extends Controller
             ->paginate(100)
             ->withQueryString();
 
-        return view('finance.cards.invoices.show', compact('card', 'invoice', 'transactions'));
+        $previousInvoice = $card->invoices()
+            ->where('reference_month', '<', $invoice->reference_month)
+            ->latest('reference_month')
+            ->first();
+
+        $nextInvoice = $card->invoices()
+            ->where('reference_month', '>', $invoice->reference_month)
+            ->oldest('reference_month')
+            ->first();
+
+        return view('finance.cards.invoices.show', compact('card', 'invoice', 'transactions', 'previousInvoice', 'nextInvoice'));
     }
 
     /**
