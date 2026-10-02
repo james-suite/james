@@ -6,6 +6,7 @@ use App\Enums\NotificationLevel;
 use App\Enums\TransactionStatus;
 use App\Models\FinancialCreditCardInvoice;
 use App\Models\FinancialRecurrence;
+use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\User;
 use App\Notifications\GeneralNotification;
@@ -194,7 +195,7 @@ class ProcessFinancialRecurrences extends Command
                 }
 
                 $syncData = $recurrence->tags
-                    ->mapWithKeys(fn ($tag) => [$tag->id => ['is_primary' => false]])
+                    ->mapWithKeys(fn (FinancialTag $tag): array => [$tag->id => ['is_primary' => (bool) $tag->pivot->is_primary]])
                     ->all();
 
                 if ($syncData !== []) {
