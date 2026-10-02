@@ -2,7 +2,9 @@
 
 use App\Enums\NotificationLevel;
 use App\Models\FinancialAccount;
+use App\Models\FinancialCreditCard;
 use App\Models\FinancialRecurrence;
+use App\Models\FinancialTag;
 use App\Models\FinancialTransaction;
 use App\Models\User;
 use App\Notifications\GeneralNotification;
@@ -17,6 +19,57 @@ beforeEach(function () {
 afterEach(function () {
     Carbon::setTestNow();
 });
+
+it('inherits recurrence tag roles on newly generated occurrences', function (string $destination, bool $hasTags, bool $hasPrimary): void {
+    Carbon::setTestNow('2026-03-31 12:00:00');
+    $account = FinancialAccount::factory()->create();
+    $card = $destination === 'card'
+        ? FinancialCreditCard::factory()->create(['financial_account_id' => $account->id])
+        : null;
+    $recurrence = FinancialRecurrence::factory()->create([
+        'financial_account_id' => $card ? null : $account->id,
+        'financial_credit_card_id' => $card?->id,
+        'start_date' => '2026-01-31',
+        'next_processing_date' => '2026-01-31',
+    ]);
+    $expectedTags = [];
+
+    if ($hasTags) {
+        $primaryTag = FinancialTag::factory()->create();
+        $secondaryTag = FinancialTag::factory()->create();
+        $expectedTags = [
+            $primaryTag->id => $hasPrimary,
+            $secondaryTag->id => false,
+        ];
+        $recurrence->tags()->sync([
+            $primaryTag->id => ['is_primary' => $hasPrimary],
+            $secondaryTag->id => ['is_primary' => false],
+        ]);
+    }
+
+    $this->artisan('finance:process-recurrences')->assertSuccessful();
+
+    $transactions = $recurrence->transactions()->with('tags')->get();
+
+    expect($transactions)->toHaveCount(3);
+
+    foreach ($transactions as $transaction) {
+        expect($transaction->tags->mapWithKeys(
+            fn (FinancialTag $tag): array => [$tag->id => (bool) $tag->pivot->is_primary]
+        )->sortKeys()->all())->toBe(collect($expectedTags)->sortKeys()->all());
+    }
+
+    $this->artisan('finance:process-recurrences')->assertSuccessful();
+
+    expect($recurrence->transactions()->count())->toBe(3);
+})->with([
+    'account with primary and secondary tags' => ['account', true, true],
+    'card with primary and secondary tags' => ['card', true, true],
+    'account with only secondary tags' => ['account', true, false],
+    'card with only secondary tags' => ['card', true, false],
+    'account without tags' => ['account', false, false],
+    'card without tags' => ['card', false, false],
+]);
 
 it('notifies users when recurrences are processed with count and total', function () {
     $account = FinancialAccount::factory()->create();
@@ -189,15 +242,21 @@ it('reconciles an existing occurrence without creating or notifying a duplicate'
         'start_date' => '2026-01-31',
         'next_processing_date' => '2026-01-31',
     ]);
-    FinancialTransaction::factory()->posted()->create([
+    $tag = FinancialTag::factory()->create();
+    $recurrence->tags()->attach($tag->id, ['is_primary' => true]);
+    $transaction = FinancialTransaction::factory()->posted()->create([
         'financial_account_id' => $account->id,
         'financial_recurrence_id' => $recurrence->id,
         'date' => '2026-01-31',
     ]);
+    $transaction->tags()->attach($tag->id, ['is_primary' => false]);
 
     $this->artisan('finance:process-recurrences')->assertSuccessful();
 
     expect($recurrence->transactions()->count())->toBe(1)
         ->and($recurrence->fresh()->next_processing_date->toDateString())->toBe('2026-02-28');
+    $tags = $transaction->fresh()->tags;
+    expect($tags)->toHaveCount(1)
+        ->and((bool) $tags->sole()->pivot->is_primary)->toBeFalse();
     Notification::assertNothingSent();
 });
