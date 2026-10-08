@@ -162,7 +162,7 @@ class FinancialCreditCardInvoice extends Model
 
         $today = Carbon::today();
 
-        if ($today->lt($this->closing_date)) {
+        if ($today->lte($this->closing_date)) {
             return InvoiceStatus::Open;
         }
 
@@ -328,11 +328,11 @@ class FinancialCreditCardInvoice extends Model
             ? $existingInvoice->closing_date->copy()
             : $candidateMonth->copy()->day((int) min($card->closing_day, $candidateMonth->daysInMonth));
 
-        if ($date->copy()->startOfDay()->lt($closingDate)) {
-            // Purchase date is strictly before the closing date, belongs to the current month's invoice
+        if ($date->copy()->startOfDay()->lte($closingDate)) {
+            // Purchases through the closing date belong to the current month's invoice.
             $referenceMonth = $candidateMonth;
         } else {
-            // Purchase date is on or after the closing date, belongs to the next month's invoice
+            // Purchases after the closing date belong to the next month's invoice.
             $referenceMonth = $candidateMonth->copy()->addMonthNoOverflow();
             $closingDate = $referenceMonth->copy()->day((int) min($card->closing_day, $referenceMonth->daysInMonth));
         }

@@ -46,7 +46,7 @@ class RolloverCreditCardInvoices extends Command
     }
 
     /**
-     * Envia notificações para faturas cujo fechamento ocorreu hoje.
+     * Envia notificações após o último dia de compras da fatura terminar.
      */
     private function notifyClosedInvoices(Carbon $today): void
     {
@@ -55,7 +55,7 @@ class RolloverCreditCardInvoices extends Command
             'transactions' => fn ($query) => $query->withoutDrafts(),
         ])
             ->withTotalAmount()
-            ->whereDate('closing_date', $today)
+            ->whereDate('closing_date', $today->copy()->subDay())
             ->get();
 
         if ($closedInvoices->isEmpty()) {

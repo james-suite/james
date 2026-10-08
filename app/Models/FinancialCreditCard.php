@@ -115,8 +115,8 @@ class FinancialCreditCard extends Model
     /**
      * Resolve the reference month for a given date based on the card's closing day.
      *
-     * Dates before the closing day belong to the current month's invoice. The
-     * closing day itself and later dates belong to the next month's invoice.
+     * Dates through the closing day belong to the current month's invoice.
+     * Later dates belong to the next month's invoice.
      * Pure calculation — no database queries.
      */
     public function resolveReferenceMonth(Carbon $date): Carbon
@@ -124,7 +124,7 @@ class FinancialCreditCard extends Model
         $candidateMonth = $date->copy()->startOfMonth();
         $closingDate = $candidateMonth->copy()->day((int) min($this->closing_day, $candidateMonth->daysInMonth));
 
-        if ($date->copy()->startOfDay()->lt($closingDate)) {
+        if ($date->copy()->startOfDay()->lte($closingDate)) {
             return $candidateMonth;
         }
 
@@ -156,7 +156,15 @@ class FinancialCreditCard extends Model
      */
     public function setCurrentInvoice(Carbon $date): void
     {
-        $referenceMonth = $this->resolveReferenceMonth($date);
+        $candidateMonth = $date->copy()->startOfMonth();
+        $candidateInvoice = $this->invoices
+            ->first(fn ($inv) => $inv->reference_month && $inv->reference_month->copy()->startOfMonth()->eq($candidateMonth));
+
+        $referenceMonth = $candidateInvoice
+            ? ($date->copy()->startOfDay()->lte($candidateInvoice->closing_date)
+                ? $candidateMonth
+                : $candidateMonth->copy()->addMonthNoOverflow())
+            : $this->resolveReferenceMonth($date);
 
         $currentInvoice = $this->invoices
             ->first(fn ($inv) => $inv->reference_month && $inv->reference_month->copy()->startOfMonth()->eq($referenceMonth));
