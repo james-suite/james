@@ -103,10 +103,8 @@
             'is-closing': closing,
         }"
         @class([
-        't-dropdown absolute z-50 rounded-lg border bg-white p-1 shadow-lg',
+        't-dropdown absolute z-50 rounded-lg border border-neutral-200 bg-white p-1',
         $dropdownPosition,
-        'border-accent' => $accent,
-        'border-neutral-300' => !$accent,
         $contentClass,
     ])>
         {{ $content }}

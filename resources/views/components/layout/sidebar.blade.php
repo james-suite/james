@@ -31,7 +31,7 @@
     <aside
         x-ref="sidebar"
         id="main-navigation"
-        class="fixed top-0 left-0 z-40 flex h-screen w-64 flex-col gap-4 border-e border-neutral-300 bg-neutral-100 p-4 transition-transform motion-duration-fast motion-ease-smooth-out lg:translate-x-0"
+        class="fixed top-0 left-0 z-40 flex h-screen w-64 flex-col gap-4 border-e border-neutral-200 bg-neutral-100 p-4 transition-transform motion-duration-fast motion-ease-smooth-out lg:translate-x-0"
         :class="{ '-translate-x-full': !open && !isDesktop }"
         :aria-hidden="(!open && !isDesktop).toString()"
         :inert="!open && !isDesktop"
@@ -57,7 +57,7 @@
             {{ $slot }}
         </nav>
 
-        <x-dropdown position="top" class="mt-auto hidden lg:block" accent contentClass="w-full">
+        <x-dropdown position="top" class="mt-auto hidden lg:block" contentClass="w-full">
             <x-slot name="trigger">
                 <button class="w-full flex items-center rounded-lg p-1 hover:bg-neutral-800/5 group cursor-pointer">
                     <x-avatar :model="auth()->user()" />
@@ -80,7 +80,7 @@
                     </div>
                 </div>
 
-                <hr class="my-1 border-neutral-300">
+                <hr class="my-1 border-neutral-200">
 
                 <a href="{{ route('settings') }}" @click="closeMenu()"
                     class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-200">
@@ -123,7 +123,7 @@
             <x-heroicon-o-bars-3 class="w-6 h-6" />
         </button>
 
-        <x-dropdown position="bottom-end" class="ms-auto" accent contentClass="w-60">
+        <x-dropdown position="bottom-end" class="ms-auto" contentClass="w-60">
             <x-slot name="trigger">
                 <button
                     class="w-full flex items-center rounded-lg p-1 hover:bg-neutral-800/5 group cursor-pointer gap-2">
@@ -146,7 +146,7 @@
                     </div>
                 </div>
 
-                <hr class="my-1 border-neutral-300">
+                <hr class="my-1 border-neutral-200">
 
                 <a href="{{ route('settings') }}" @click="closeMenu()"
                     class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-200">

@@ -1,6 +1,6 @@
 <x-layouts.financial>
     <x-page-header title="Dashboard Financeiro" :action="route('financial.transactions.create')" actionText="Nova Transação" icon="heroicon-o-plus">
-        <form method="GET" action="{{ route('financial.dashboard') }}" class="flex items-center bg-white border border-neutral-200 px-3 min-h-11 rounded-lg shadow-sm" x-data x-ref="filterForm">
+        <form method="GET" action="{{ route('financial.dashboard') }}" class="flex items-center bg-white border border-neutral-200 px-3 min-h-11 rounded-lg" x-data x-ref="filterForm">
             <div @click="setTimeout(() => $refs.filterForm.submit(), 150)">
                 <x-switch name="include_investments" :checked="$includeInvestments" label="Investimentos" color="accent" />
             </div>
@@ -51,71 +51,68 @@
         
         <!-- Previsibilidade de Caixa -->
         <div class="lg:col-span-1 flex flex-col h-full">
-            <x-card class="bg-white rounded-xl border border-gray-100 shadow-sm h-full flex flex-col">
+            <x-card class="h-full flex flex-col">
                 <h3 class="text-lg font-bold text-neutral-900 mb-4">Projeção de Caixa</h3>
                 
-                <div class="flex-1 flex flex-col justify-center gap-2">
+                <div class="flex-1 flex flex-col justify-center gap-2.5">
                     <!-- Mês Atual -->
-                    <div class="bg-neutral-50/70 rounded-xl p-5 border border-neutral-100 relative overflow-hidden transition-all hover:shadow-sm">
-                        <div class="absolute right-0 top-0 h-full w-1/3 bg-linear-to-l {{ $projections['currentMonth'] >= 0 ? 'from-green-50' : 'from-red-50' }} to-transparent opacity-50"></div>
-                        <div class="relative z-10 flex items-center justify-between">
+                    <div class="bg-neutral-50 rounded-lg p-4 border border-neutral-200/80">
+                        <div class="flex items-center justify-between gap-3">
                             <div>
                                 <p class="text-sm font-medium text-neutral-500 flex items-center gap-1.5">
                                     <x-heroicon-s-calendar class="w-4 h-4 text-neutral-400" /> Fim do Mês Atual
                                 </p>
-                                <p class="text-2xl font-bold mt-1 {{ $projections['currentMonth'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                <p class="text-2xl font-bold tabular-nums mt-1 {{ $projections['currentMonth'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                     {{ formatCurrency($projections['currentMonth']) }}
                                 </p>
                             </div>
-                            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm {{ $projections['currentMonth'] >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' }}">
+                            <div class="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 {{ $projections['currentMonth'] >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' }}">
                                 @if($projections['currentMonth'] >= 0)
-                                    <x-heroicon-o-arrow-trending-up class="w-6 h-6" />
+                                    <x-heroicon-o-arrow-trending-up class="w-5 h-5" />
                                 @else
-                                    <x-heroicon-o-arrow-trending-down class="w-6 h-6" />
+                                    <x-heroicon-o-arrow-trending-down class="w-5 h-5" />
                                 @endif
                             </div>
                         </div>
                     </div>
 
                     <!-- Próximo Mês -->
-                    <div class="bg-neutral-50/70 rounded-xl p-5 border border-neutral-100 relative overflow-hidden transition-all hover:shadow-sm">
-                        <div class="absolute right-0 top-0 h-full w-1/3 bg-linear-to-l {{ $projections['nextMonth'] >= 0 ? 'from-green-50' : 'from-red-50' }} to-transparent opacity-50"></div>
-                        <div class="relative z-10 flex items-center justify-between">
+                    <div class="bg-neutral-50 rounded-lg p-4 border border-neutral-200/80">
+                        <div class="flex items-center justify-between gap-3">
                             <div>
                                 <p class="text-sm font-medium text-neutral-500 flex items-center gap-1.5">
                                     <x-heroicon-s-calendar class="w-4 h-4 text-neutral-400" /> Fim do Próximo Mês
                                 </p>
-                                <p class="text-2xl font-bold mt-1 {{ $projections['nextMonth'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                <p class="text-2xl font-bold tabular-nums mt-1 {{ $projections['nextMonth'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                     {{ formatCurrency($projections['nextMonth']) }}
                                 </p>
                             </div>
-                            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm {{ $projections['nextMonth'] >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' }}">
+                            <div class="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 {{ $projections['nextMonth'] >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' }}">
                                 @if($projections['nextMonth'] >= 0)
-                                    <x-heroicon-o-arrow-trending-up class="w-6 h-6" />
+                                    <x-heroicon-o-arrow-trending-up class="w-5 h-5" />
                                 @else
-                                    <x-heroicon-o-arrow-trending-down class="w-6 h-6" />
+                                    <x-heroicon-o-arrow-trending-down class="w-5 h-5" />
                                 @endif
                             </div>
                         </div>
                     </div>
 
                     <!-- Dois Meses à Frente -->
-                    <div class="bg-neutral-50/70 rounded-xl p-5 border border-neutral-100 relative overflow-hidden transition-all hover:shadow-sm">
-                        <div class="absolute right-0 top-0 h-full w-1/3 bg-linear-to-l {{ $projections['afterNextMonth'] >= 0 ? 'from-green-50' : 'from-red-50' }} to-transparent opacity-50"></div>
-                        <div class="relative z-10 flex items-center justify-between">
+                    <div class="bg-neutral-50 rounded-lg p-4 border border-neutral-200/80">
+                        <div class="flex items-center justify-between gap-3">
                             <div>
                                 <p class="text-sm font-medium text-neutral-500 flex items-center gap-1.5">
                                     <x-heroicon-s-calendar class="w-4 h-4 text-neutral-400" /> Fim de {{ formatMonthYear(now()->addMonths(2)) }}
                                 </p>
-                                <p class="text-2xl font-bold mt-1 {{ $projections['afterNextMonth'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                <p class="text-2xl font-bold tabular-nums mt-1 {{ $projections['afterNextMonth'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                     {{ formatCurrency($projections['afterNextMonth']) }}
                                 </p>
                             </div>
-                            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm {{ $projections['afterNextMonth'] >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' }}">
+                            <div class="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 {{ $projections['afterNextMonth'] >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600' }}">
                                 @if($projections['afterNextMonth'] >= 0)
-                                    <x-heroicon-o-arrow-trending-up class="w-6 h-6" />
+                                    <x-heroicon-o-arrow-trending-up class="w-5 h-5" />
                                 @else
-                                    <x-heroicon-o-arrow-trending-down class="w-6 h-6" />
+                                    <x-heroicon-o-arrow-trending-down class="w-5 h-5" />
                                 @endif
                             </div>
                         </div>
@@ -126,7 +123,7 @@
 
         <!-- Lado Direito (lg:col-span-1): "Saldos por Conta" -->
         <div class="hidden lg:flex lg:col-span-1 flex-col h-full">
-            <x-card class="bg-white rounded-xl border border-gray-100 shadow-sm h-full flex flex-col">
+            <x-card class="h-full flex flex-col">
                 <h3 class="text-lg font-bold text-neutral-900 mb-4">Saldos por Conta</h3>
                 <x-finance.account-balances-chart :chartData="$accountBalancesChart" />
             </x-card>
@@ -134,7 +131,7 @@
 
         <!-- Top 5 Despesas -->
         <div class="lg:col-span-1 flex flex-col h-full">
-            <x-card class="bg-white rounded-xl border border-gray-100 shadow-sm h-full flex flex-col">
+            <x-card class="h-full flex flex-col">
                 <h3 class="text-lg font-bold text-neutral-900 mb-4">Top Despesas (30 Dias)</h3>
                 @if(count($topExpenseTags) > 0)
                     <div class="space-y-6 flex-1 mt-2">

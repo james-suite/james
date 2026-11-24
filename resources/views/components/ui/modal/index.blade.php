@@ -115,7 +115,7 @@
                  @click.self="closeModal()">
                 <div
                      x-ref="panel"
-                     class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full {{ $maxWidth }}"
+                     class="relative transform overflow-hidden rounded-xl border border-neutral-200 bg-white text-left transition-all sm:my-8 sm:w-full {{ $maxWidth }}"
                      id="{{ $modalId }}"
                      role="dialog"
                      aria-modal="true"

@@ -1,6 +1,6 @@
 @props(['contact', 'selectedModel' => 'selectedIds', 'showBalance' => false])
 
-<x-card size="sm" {{ $attributes->merge(['class' => 'flex items-center gap-4 cursor-pointer hover:border-accent hover:shadow hover:-translate-y-0.5']) }}
+<x-card size="sm" {{ $attributes->merge(['class' => 'flex items-center gap-4 cursor-pointer hover:border-neutral-300 hover:bg-neutral-50/50']) }}
      @click="if(!$event.target.closest('a') && !$event.target.closest('label')) document.getElementById('chk_contact_{{ $contact->id }}').click()"
      x-bind:class="{'ring-2 ring-accent border-transparent': {{ $selectedModel }}.includes(String({{ $contact->id }})) || {{ $selectedModel }}.includes({{ $contact->id }}) }">
     

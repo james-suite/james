@@ -17,7 +17,7 @@
     }
 @endphp
 
-<div class="fixed top-0 inset-x-0 flex items-start justify-center lg:justify-end p-4 z-[60] pointer-events-none">
+<div class="fixed top-0 inset-x-0 flex items-start justify-center lg:justify-end p-4 z-60 pointer-events-none">
 
         <div x-data="{
                 show: {{ $hasInitialToast ? 'true' : 'false' }},
@@ -61,7 +61,7 @@
             x-transition:enter-start="translate-x-full opacity-0" x-transition:enter-end="translate-x-0 opacity-100"
             x-transition:leave="transition motion-ease-smooth-out motion-duration-fast transform is-leaving"
             x-transition:leave-start="translate-x-0 opacity-100" x-transition:leave-end="translate-x-full opacity-0"
-            class="t-toast w-full max-w-sm rounded-lg shadow-lg border border-neutral-300 bg-white overflow-hidden pointer-events-auto"
+            class="t-toast w-full max-w-sm rounded-xl border border-neutral-200 bg-white overflow-hidden pointer-events-auto"
             role="status"
             aria-atomic="true"
             :aria-live="type === 'error' ? 'assertive' : 'polite'">

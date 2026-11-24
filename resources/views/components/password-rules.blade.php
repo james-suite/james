@@ -1,4 +1,4 @@
-<x-accordion id="password-rules-panel" head-class="flex items-center justify-between gap-4" class="mb-6 rounded-md border border-neutral-200 bg-white px-4 py-3 text-neutral-800 shadow-sm">
+<x-accordion id="password-rules-panel" head-class="flex items-center justify-between gap-4" class="mb-6 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-neutral-800">
     <x-slot name="trigger">
         <div class="flex items-center">
             <x-heroicon-o-information-circle class="mr-4 h-7 w-7 shrink-0 text-accent" />

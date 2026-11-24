@@ -17,7 +17,7 @@
 
 @props(['scrollable' => false])
 
-<div {{ $attributes->class('-mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8 mb-6 border-b border-neutral-300 bg-neutral-100 -mt-3 sm:-mt-6 lg:-mt-8') }}>
+<div {{ $attributes->class('-mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8 mb-6 border-b border-neutral-200 bg-neutral-100 -mt-3 sm:-mt-6 lg:-mt-8') }}>
     <nav
         @class([
             'flex min-w-0 items-center gap-0.5 py-3',
