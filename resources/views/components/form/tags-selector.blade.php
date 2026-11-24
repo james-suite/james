@@ -26,6 +26,13 @@
     open: false,
     previouslyFocused: null,
     search: '',
+    creatingTag: false,
+    creatingLoading: false,
+    creatingError: '',
+    newTagName: '',
+    newTagColor: '#3b82f6',
+    newTagIcon: 'heroicon-o-tag',
+    presetColors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b'],
     options: {{ Js::from($options) }},
     selectedIds: {{ $xValue ?: Js::from(is_array($value) ? array_values($value) : []) }} || [],
     primaryId: {{ $xPrimaryValue ?: Js::from($primaryValue) }} || null,
@@ -37,6 +44,13 @@
         if (this.primaryId) {
             this.primaryId = Number(this.primaryId);
         }
+        window.addEventListener('james-tag-created', (event) => {
+            const tag = event.detail;
+            if (tag && !this.options.some(o => o.id === tag.id)) {
+                this.options.push(tag);
+                this.options.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+            }
+        });
     },
 
     get selectedOptions() {
@@ -80,6 +94,72 @@
     setPrimary(id) {
         if (this.selectedIds.includes(id) && !({{ $xDisablePrimary === 'false' ? 'false' : $xDisablePrimary }})) {
             this.primaryId = id;
+        }
+    },
+
+    openCreateForm(prefill = '') {
+        this.creatingTag = true;
+        this.creatingError = '';
+        this.newTagName = prefill || this.search.trim();
+        this.$nextTick(() => this.$refs.newTagNameInput?.focus());
+    },
+
+    cancelCreateForm() {
+        this.creatingTag = false;
+        this.creatingError = '';
+        this.newTagName = '';
+    },
+
+    async createTag() {
+        const name = this.newTagName.trim();
+        if (!name || this.creatingLoading) {
+            this.creatingError = 'Informe o nome da tag.';
+            return;
+        }
+
+        this.creatingLoading = true;
+        this.creatingError = '';
+
+        try {
+            const response = await fetch('{{ route('financial.tags.store') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+                body: JSON.stringify({
+                    name,
+                    color_hex: this.newTagColor,
+                    icon: this.newTagIcon,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                this.creatingError = data.errors?.name?.[0] || data.message || 'Não foi possível criar a tag.';
+                return;
+            }
+
+            window.dispatchEvent(new CustomEvent('james-tag-created', { detail: data }));
+
+            if (!this.options.some(o => o.id === data.id)) {
+                this.options.push(data);
+                this.options.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+            }
+
+            if (!this.selectedIds.includes(data.id)) {
+                this.toggleTag(data.id);
+            }
+
+            this.search = '';
+            this.cancelCreateForm();
+            window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Tag criada e selecionada.' } }));
+        } catch (e) {
+            this.creatingError = 'Erro de conexão ao criar a tag.';
+        } finally {
+            this.creatingLoading = false;
         }
     }
 }" class="w-full relative" x-effect="if ({{ $xDisablePrimary === 'false' ? 'false' : $xDisablePrimary }}) { primaryId = null; }">
@@ -221,15 +301,59 @@
                                 <x-heroicon-o-tag class="size-6" />
                             </div>
                             <p class="text-neutral-500 text-sm">Nenhuma tag encontrada para "<span x-text="search" class="font-semibold text-neutral-700"></span>"</p>
+                            <button type="button" class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent/80 cursor-pointer" @click="openCreateForm(search.trim())">
+                                <x-heroicon-o-plus-circle class="size-4" />
+                                <span>Criar tag "<span x-text="search.trim()"></span>"</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Inline Create Form -->
+                    <div class="px-6 py-4 border-t border-neutral-100 bg-neutral-50/80 shrink-0" x-show="creatingTag" x-transition>
+                        <div class="flex flex-col gap-3">
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                <input
+                                    type="text"
+                                    x-ref="newTagNameInput"
+                                    x-model="newTagName"
+                                    @keydown.enter.prevent="createTag()"
+                                    @keydown.escape.prevent.stop="cancelCreateForm()"
+                                    placeholder="Nome da nova tag..."
+                                    class="h-10 flex-1 rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
+                                >
+                                <div class="flex items-center gap-1.5">
+                                    <template x-for="color in presetColors" :key="color">
+                                        <button
+                                            type="button"
+                                            class="size-6 rounded-full border-2 cursor-pointer transition-transform"
+                                            :style="`background-color: ${color};`"
+                                            :class="newTagColor === color ? 'border-neutral-900 scale-110' : 'border-transparent hover:scale-105'"
+                                            :aria-label="`Selecionar cor ${color}`"
+                                            @click="newTagColor = color"
+                                        ></button>
+                                    </template>
+                                </div>
+                            </div>
+                            <p class="text-xs text-red-600" x-show="creatingError" x-text="creatingError"></p>
+                            <div class="flex items-center justify-end gap-2">
+                                <x-button type="button" color="outline" class="min-h-9! py-1.5! text-xs!" @click="cancelCreateForm()">
+                                    Cancelar
+                                </x-button>
+                                <x-button type="button" class="min-h-9! py-1.5! text-xs!" ::disabled="creatingLoading" @click="createTag()">
+                                    <span x-show="!creatingLoading">Salvar e selecionar</span>
+                                    <span x-show="creatingLoading">Salvando...</span>
+                                </x-button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Footer -->
                     <div class="px-6 py-4 border-t border-neutral-100 bg-neutral-50 rounded-b-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
-                        <a href="{{ route('financial.tags.create') }}" target="_blank" class="text-sm text-accent hover:text-accent/80 font-medium inline-flex items-center gap-1.5 transition-colors">
+                        <button type="button" class="text-sm text-accent hover:text-accent/80 font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer" x-show="!creatingTag" @click="openCreateForm()">
                             <x-heroicon-o-plus-circle class="size-5" />
                             Criar nova tag
-                        </a>
+                        </button>
+                        <div x-show="creatingTag"></div>
                         <x-button type="button" @click="closeModal()" class="w-full sm:w-auto">
                             Concluir Seleção
                         </x-button>

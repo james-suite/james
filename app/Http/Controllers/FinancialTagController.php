@@ -7,7 +7,9 @@ use App\Http\Requests\StoreFinancialTagRequest;
 use App\Http\Requests\UpdateFinancialTagRequest;
 use App\Models\FinancialTag;
 use BladeUI\Icons\Factory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\View;
 
 class FinancialTagController extends Controller
@@ -42,9 +44,18 @@ class FinancialTagController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreFinancialTagRequest $request): RedirectResponse
+    public function store(StoreFinancialTagRequest $request): RedirectResponse|JsonResponse
     {
-        FinancialTag::create($request->validated());
+        $tag = FinancialTag::create($request->validated());
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'id' => $tag->id,
+                'name' => $tag->name,
+                'color_hex' => $tag->color_hex,
+                'svg' => Blade::render('<x-dynamic-component :component="$icon" class="size-3.5" />', ['icon' => $tag->icon]),
+            ], 201);
+        }
 
         return redirect()
             ->route('financial.tags.index')
