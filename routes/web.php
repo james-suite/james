@@ -20,6 +20,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
     Route::get('/audit/{activity}', [AuditController::class, 'show'])->name('audit.show');
+    Route::post('/audit/{activity}/revert', [AuditController::class, 'revert'])->name('audit.revert');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');

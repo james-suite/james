@@ -90,10 +90,16 @@
                                     <x-table.column>Anterior</x-table.column>
                                 @endif
                                 <x-table.column>Atual</x-table.column>
+                                @if($hasRevertibleFields)
+                                    <x-table.column align="right">Ação</x-table.column>
+                                @endif
                             @endif
                         </x-table.header>
                         <div class="divide-y divide-neutral-100">
                             @foreach($parsedChanges as $change)
+                                @php
+                                    $revertModalName = 'revert-field-' . $activity->id . '-' . $change['key'];
+                                @endphp
                                 <x-table.row class="{{ $gridClass }} hidden sm:grid">
                                     <x-table.cell class="font-medium text-neutral-900 whitespace-normal break-words">{{ $change['key'] }}</x-table.cell>
                                     @if($isDeleted)
@@ -121,10 +127,34 @@
                                                 <span class="text-neutral-400 font-normal">-</span>
                                             @endif
                                         </x-table.cell>
+                                        @if($hasRevertibleFields)
+                                            <x-table.cell align="right">
+                                                @if($change['revertible'])
+                                                    <x-modal.trigger :name="$revertModalName">
+                                                        <x-button type="button" color="outline" class="min-h-8! py-1! px-2.5! text-xs! bg-white">
+                                                            Reverter
+                                                        </x-button>
+                                                    </x-modal.trigger>
+                                                @elseif($change['already_reverted'])
+                                                    <span class="text-xs text-neutral-400">Revertido</span>
+                                                @endif
+                                            </x-table.cell>
+                                        @endif
                                     @endif
                                     
                                     <x-slot:mobile>
-                                        <div class="font-medium text-neutral-900 mb-2 whitespace-normal break-words">{{ $change['key'] }}</div>
+                                        <div class="flex items-center justify-between gap-2 mb-2">
+                                            <div class="font-medium text-neutral-900 whitespace-normal break-words">{{ $change['key'] }}</div>
+                                            @if($change['revertible'])
+                                                <x-modal.trigger :name="$revertModalName">
+                                                    <x-button type="button" color="outline" class="min-h-8! py-1! px-2.5! text-xs! bg-white">
+                                                        Reverter
+                                                    </x-button>
+                                                </x-modal.trigger>
+                                            @elseif($change['already_reverted'])
+                                                <span class="text-xs text-neutral-400">Revertido</span>
+                                            @endif
+                                        </div>
                                         @if($isDeleted)
                                             <div class="text-neutral-600 font-medium break-all text-sm">
                                                 <span class="text-neutral-400 font-normal block text-xs mb-0.5">Dado:</span>
@@ -158,6 +188,44 @@
                                         @endif
                                     </x-slot:mobile>
                                 </x-table.row>
+
+                                @if($change['revertible'])
+                                    <x-modal
+                                        :name="$revertModalName"
+                                        :title="'Reverter campo: ' . $change['key']"
+                                        confirmVariant="warning">
+                                        <x-slot:content>
+                                            <div class="space-y-3 text-left">
+                                                <p>Deseja restaurar o campo <strong>{{ $change['key'] }}</strong> para o valor anterior registrado neste evento?</p>
+
+                                                <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2 text-xs">
+                                                    <div>
+                                                        <span class="text-neutral-500 block">Valor atual no registro:</span>
+                                                        <span class="font-medium text-neutral-900 break-all">{{ $change['current'] }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-neutral-500 block">Será restaurado para:</span>
+                                                        <span class="font-medium text-green-700 break-all">{{ $change['old'] }}</span>
+                                                    </div>
+                                                </div>
+
+                                                @if($change['has_conflict'])
+                                                    <div class="rounded-md bg-amber-50 p-3 border border-amber-200 text-amber-800 text-xs">
+                                                        <strong>Atenção:</strong> Este campo foi alterado novamente após este evento. Ao confirmar, o valor atual será substituído.
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </x-slot:content>
+
+                                        <form action="{{ route('audit.revert', $activity) }}" method="POST" class="m-0">
+                                            @csrf
+                                            <input type="hidden" name="fields[]" value="{{ $change['key'] }}">
+                                            <x-button type="submit" class="w-full sm:w-auto">
+                                                Confirmar Reversão
+                                            </x-button>
+                                        </form>
+                                    </x-modal>
+                                @endif
                             @endforeach
                         </div>
                     </x-table>
