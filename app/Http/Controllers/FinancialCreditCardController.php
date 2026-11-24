@@ -20,8 +20,10 @@ class FinancialCreditCardController extends Controller
     public function index(): View
     {
         $today = Carbon::today();
+        $showArchived = request()->boolean('archived');
 
         $cards = FinancialCreditCard::query()
+            ->when($showArchived, fn ($query) => $query->archived(), fn ($query) => $query->active())
             ->when(request('search'), fn ($query, $search) => $query->search($search, ['name']))
             ->withUsedLimit()
             ->with(['financialAccount', 'invoices' => fn ($q) => $q->withTotalAmount()])
@@ -32,8 +34,9 @@ class FinancialCreditCardController extends Controller
         $cards->each(fn (FinancialCreditCard $card) => $card->setCurrentInvoice($today));
 
         $hasTrashed = FinancialCreditCard::onlyTrashed()->exists();
+        $hasArchived = FinancialCreditCard::archived()->exists();
 
-        return view('finance.cards.index', compact('cards', 'hasTrashed'));
+        return view('finance.cards.index', compact('cards', 'hasTrashed', 'hasArchived', 'showArchived'));
     }
 
     /**
@@ -41,7 +44,7 @@ class FinancialCreditCardController extends Controller
      */
     public function create(): View
     {
-        $accounts = FinancialAccount::orderBy('name')->get();
+        $accounts = FinancialAccount::active()->orderBy('name')->get();
 
         return view('finance.cards.create', compact('accounts'));
     }
@@ -70,7 +73,10 @@ class FinancialCreditCardController extends Controller
             ->orderBy('reference_month', 'desc')
             ->get();
 
-        return view('finance.cards.show', compact('card', 'invoices'));
+        $unpaidInvoicesCount = $invoices->whereNull('paid_at')->count();
+        $activeRecurrencesCount = $card->recurrences()->count();
+
+        return view('finance.cards.show', compact('card', 'invoices', 'unpaidInvoicesCount', 'activeRecurrencesCount'));
     }
 
     /**
@@ -78,7 +84,10 @@ class FinancialCreditCardController extends Controller
      */
     public function edit(FinancialCreditCard $card): View
     {
-        $accounts = FinancialAccount::orderBy('name')->get();
+        $accounts = FinancialAccount::query()
+            ->where(fn ($query) => $query->active()->orWhere('id', $card->financial_account_id))
+            ->orderBy('name')
+            ->get();
 
         return view('finance.cards.edit', compact('card', 'accounts'));
     }
@@ -127,6 +136,30 @@ class FinancialCreditCardController extends Controller
         return redirect()
             ->route('financial.cards.index')
             ->with('success', 'Cartão de crédito removido com sucesso.');
+    }
+
+    /**
+     * Archive the credit card.
+     */
+    public function archive(FinancialCreditCard $card): RedirectResponse
+    {
+        $card->update(['archived_at' => now()]);
+
+        return redirect()
+            ->route('financial.cards.show', $card)
+            ->with('success', 'Cartão de crédito arquivado com sucesso.');
+    }
+
+    /**
+     * Unarchive the credit card.
+     */
+    public function unarchive(FinancialCreditCard $card): RedirectResponse
+    {
+        $card->update(['archived_at' => null]);
+
+        return redirect()
+            ->route('financial.cards.show', $card)
+            ->with('success', 'Cartão de crédito reativado com sucesso.');
     }
 
     /**

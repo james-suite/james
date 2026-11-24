@@ -22,6 +22,8 @@ Route::prefix('financial')->name('financial.')->group(function () {
     Route::get('/accounts/trashed', [FinancialAccountController::class, 'trashed'])->name('accounts.trashed');
     Route::patch('/accounts/{financialAccount}/restore', [FinancialAccountController::class, 'restore'])->name('accounts.restore')->withTrashed();
     Route::delete('/accounts/{financialAccount}/force', [FinancialAccountController::class, 'forceDestroy'])->name('accounts.forceDestroy')->withTrashed();
+    Route::patch('/accounts/{financialAccount}/archive', [FinancialAccountController::class, 'archive'])->name('accounts.archive');
+    Route::patch('/accounts/{financialAccount}/unarchive', [FinancialAccountController::class, 'unarchive'])->name('accounts.unarchive');
     Route::post('/accounts/{financialAccount}/adjust-balance', [FinancialAccountController::class, 'adjustBalance'])->name('accounts.adjust-balance');
     Route::resource('accounts', FinancialAccountController::class)->parameters([
         'accounts' => 'financialAccount',
@@ -37,6 +39,8 @@ Route::prefix('financial')->name('financial.')->group(function () {
     Route::get('/cards/trashed', [FinancialCreditCardController::class, 'trashed'])->name('cards.trashed');
     Route::patch('/cards/{card}/restore', [FinancialCreditCardController::class, 'restore'])->name('cards.restore')->withTrashed();
     Route::delete('/cards/{card}/force', [FinancialCreditCardController::class, 'forceDestroy'])->name('cards.forceDestroy')->withTrashed();
+    Route::patch('/cards/{card}/archive', [FinancialCreditCardController::class, 'archive'])->name('cards.archive');
+    Route::patch('/cards/{card}/unarchive', [FinancialCreditCardController::class, 'unarchive'])->name('cards.unarchive');
     Route::resource('cards', FinancialCreditCardController::class);
     Route::get('cards/{card}/invoices/{invoice}', [FinancialCreditCardInvoiceController::class, 'show'])->name('cards.invoices.show');
     Route::put('cards/{card}/invoices/{invoice}', [FinancialCreditCardInvoiceController::class, 'update'])->name('cards.invoices.update');

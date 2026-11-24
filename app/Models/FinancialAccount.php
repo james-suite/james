@@ -20,6 +20,7 @@ class FinancialAccount extends Model
         'name',
         'type',
         'pix_keys',
+        'archived_at',
     ];
 
     use HasFactory, Searchable, SoftDeletes;
@@ -34,7 +35,23 @@ class FinancialAccount extends Model
         return [
             'type' => FinancialAccountType::class,
             'pix_keys' => 'array',
+            'archived_at' => 'datetime',
         ];
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    public function scopeActive(Builder $query): void
+    {
+        $query->whereNull('archived_at');
+    }
+
+    public function scopeArchived(Builder $query): void
+    {
+        $query->whereNotNull('archived_at');
     }
 
     /**

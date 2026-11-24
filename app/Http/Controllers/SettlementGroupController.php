@@ -58,8 +58,8 @@ class SettlementGroupController extends Controller
 
         abort_if($contacts->isEmpty(), 404);
 
-        $accounts = FinancialAccount::orderBy('name')->get();
-        $cards = FinancialCreditCard::orderBy('name')->get();
+        $accounts = FinancialAccount::active()->orderBy('name')->get();
+        $cards = FinancialCreditCard::active()->orderBy('name')->get();
         $tags = FinancialTag::orderBy('name')->get()->map(function ($tag) {
             return [
                 'id' => $tag->id,
@@ -102,8 +102,8 @@ class SettlementGroupController extends Controller
 
         $contacts = $settlementGroup->settlements->map(fn ($s) => $s->contact)->unique('id');
 
-        $accounts = FinancialAccount::orderBy('name')->get();
-        $cards = FinancialCreditCard::orderBy('name')->get();
+        $accounts = FinancialAccount::active()->orderBy('name')->get();
+        $cards = FinancialCreditCard::active()->orderBy('name')->get();
         $tags = FinancialTag::orderBy('name')->get()->map(function ($tag) {
             return [
                 'id' => $tag->id,

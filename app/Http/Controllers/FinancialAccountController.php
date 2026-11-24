@@ -21,7 +21,10 @@ class FinancialAccountController extends Controller
     {
         $balanceSql = "(SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount WHEN type = 'expense' THEN -amount ELSE 0 END), 0) FROM financial_transactions WHERE financial_account_id = financial_accounts.id AND status = '".TransactionStatus::Posted->value."' AND deleted_at IS NULL)";
 
+        $showArchived = request()->boolean('archived');
+
         $accounts = FinancialAccount::query()
+            ->when($showArchived, fn ($query) => $query->archived(), fn ($query) => $query->active())
             ->when(request('search'), fn ($query, $search) => $query->search($search, ['name']))
             ->withBalance()
             ->orderByRaw("CASE WHEN $balanceSql > 0 THEN 0 WHEN $balanceSql < 0 THEN 1 ELSE 2 END")
@@ -31,8 +34,9 @@ class FinancialAccountController extends Controller
             ->withQueryString();
 
         $hasTrashed = FinancialAccount::onlyTrashed()->exists();
+        $hasArchived = FinancialAccount::archived()->exists();
 
-        return view('finance.accounts.index', compact('accounts', 'hasTrashed'));
+        return view('finance.accounts.index', compact('accounts', 'hasTrashed', 'hasArchived', 'showArchived'));
     }
 
     /**
@@ -97,11 +101,16 @@ class FinancialAccountController extends Controller
             }])
             ->get();
 
+        $activeCardsCount = $account->creditCards()->active()->count();
+        $activeRecurrencesCount = $account->recurrences()->count();
+
         return view('finance.accounts.show', compact(
             'account',
             'globalIncome',
             'globalExpense',
-            'creditCards'
+            'creditCards',
+            'activeCardsCount',
+            'activeRecurrencesCount'
         ));
     }
 
@@ -150,6 +159,30 @@ class FinancialAccountController extends Controller
         return redirect()
             ->route('financial.accounts.index')
             ->with('success', 'Conta financeira movida para a lixeira.');
+    }
+
+    /**
+     * Archive the financial account.
+     */
+    public function archive(FinancialAccount $financialAccount): RedirectResponse
+    {
+        $financialAccount->update(['archived_at' => now()]);
+
+        return redirect()
+            ->route('financial.accounts.show', $financialAccount)
+            ->with('success', 'Conta financeira arquivada com sucesso.');
+    }
+
+    /**
+     * Unarchive the financial account.
+     */
+    public function unarchive(FinancialAccount $financialAccount): RedirectResponse
+    {
+        $financialAccount->update(['archived_at' => null]);
+
+        return redirect()
+            ->route('financial.accounts.show', $financialAccount)
+            ->with('success', 'Conta financeira reativada com sucesso.');
     }
 
     /**

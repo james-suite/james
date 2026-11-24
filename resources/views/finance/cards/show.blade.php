@@ -15,6 +15,52 @@
             Editar
         </x-button>
 
+        @if($card->isArchived())
+            <form action="{{ route('financial.cards.unarchive', $card) }}" method="POST" class="m-0 flex-1 sm:flex-initial">
+                @csrf
+                @method('PATCH')
+                <x-button type="submit" color="outline" class="bg-white w-full sm:w-auto">
+                    <x-heroicon-o-archive-box-arrow-down class="size-4" />
+                    Reativar
+                </x-button>
+            </form>
+        @else
+            <x-modal.trigger name="archive-card-{{ $card->id }}" class="flex-1 sm:flex-initial">
+                <x-button type="button" color="outline" class="bg-white w-full sm:w-auto">
+                    <x-heroicon-o-archive-box class="size-4" />
+                    Arquivar
+                </x-button>
+            </x-modal.trigger>
+
+            <x-modal
+                name="archive-card-{{ $card->id }}"
+                title="Arquivar Cartão"
+                confirmVariant="warning">
+                <x-slot:content>
+                    <p class="mb-3">Ao arquivar <strong>{{ $card->name }}</strong>, ele deixará de aparecer nos seletores de novas compras, mantendo faturas e histórico preservados.</p>
+                    @if($unpaidInvoicesCount > 0 || $activeRecurrencesCount > 0)
+                        <div class="rounded-md bg-amber-50 p-3 border border-amber-200 text-left text-amber-800 space-y-1">
+                            <p class="font-semibold">Atenção antes de arquivar:</p>
+                            @if($unpaidInvoicesCount > 0)
+                                <p>• {{ $unpaidInvoicesCount }} fatura(s) ainda em aberto</p>
+                            @endif
+                            @if($activeRecurrencesCount > 0)
+                                <p>• {{ $activeRecurrencesCount }} recorrência(s) vinculada(s)</p>
+                            @endif
+                        </div>
+                    @endif
+                </x-slot:content>
+
+                <form action="{{ route('financial.cards.archive', $card) }}" method="POST" class="m-0">
+                    @csrf
+                    @method('PATCH')
+                    <x-button type="submit" class="w-full sm:w-auto">
+                        Arquivar
+                    </x-button>
+                </form>
+            </x-modal>
+        @endif
+
         <x-modal.delete
             action="{{ route('financial.cards.destroy', $card) }}"
             button-class="flex-1 sm:flex-initial"
@@ -26,7 +72,12 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
         <x-card class="col-span-full md:col-span-1 flex flex-col justify-center">
-            <h3 class="text-neutral-500 font-medium text-sm mb-1">Conta Vinculada</h3>
+            <div class="flex items-center justify-between gap-2 mb-1">
+                <h3 class="text-neutral-500 font-medium text-sm">Conta Vinculada</h3>
+                @if($card->isArchived())
+                    <x-badge color="neutral" size="sm">Arquivado</x-badge>
+                @endif
+            </div>
             <div class="font-semibold text-lg text-neutral-900">{{ $card->financialAccount->name }}</div>
             
             <div class="mt-4 pt-4 border-t border-neutral-100 flex justify-between">

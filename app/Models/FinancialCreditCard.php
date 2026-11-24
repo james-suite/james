@@ -27,6 +27,7 @@ class FinancialCreditCard extends Model
         'credit_limit',
         'closing_day',
         'due_day',
+        'archived_at',
     ];
 
     use HasFactory, Searchable, SoftDeletes;
@@ -42,7 +43,23 @@ class FinancialCreditCard extends Model
             'credit_limit' => 'decimal:2',
             'closing_day' => 'integer',
             'due_day' => 'integer',
+            'archived_at' => 'datetime',
         ];
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    public function scopeActive(Builder $query): void
+    {
+        $query->whereNull('archived_at');
+    }
+
+    public function scopeArchived(Builder $query): void
+    {
+        $query->whereNotNull('archived_at');
     }
 
     /**

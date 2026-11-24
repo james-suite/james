@@ -47,8 +47,8 @@ class FinancialRecurrenceController extends Controller
      */
     public function create(): View
     {
-        $accounts = FinancialAccount::orderBy('name')->get();
-        $cards = FinancialCreditCard::orderBy('name')->get();
+        $accounts = FinancialAccount::active()->orderBy('name')->get();
+        $cards = FinancialCreditCard::active()->orderBy('name')->get();
         $tags = FinancialTag::orderBy('name')->get()->map(function ($tag) {
             return [
                 'id' => $tag->id,

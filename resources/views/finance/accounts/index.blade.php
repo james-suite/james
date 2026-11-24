@@ -1,5 +1,16 @@
 <x-layouts.financial>
-    <x-page-header title="Contas Financeiras" :action="route('financial.accounts.create')" actionText="Nova Conta" icon="heroicon-o-plus">
+    <x-page-header :title="$showArchived ? 'Contas Arquivadas' : 'Contas Financeiras'" :action="route('financial.accounts.create')" actionText="Nova Conta" icon="heroicon-o-plus">
+        @if ($showArchived)
+            <x-button color="outline" href="{{ route('financial.accounts.index') }}" class="bg-white">
+                <x-heroicon-o-arrow-uturn-left class="size-5!" />
+                Ver Ativas
+            </x-button>
+        @elseif ($hasArchived)
+            <x-button color="outline" href="{{ route('financial.accounts.index', ['archived' => 1]) }}" class="bg-white">
+                <x-heroicon-o-archive-box class="size-5!" />
+                Arquivadas
+            </x-button>
+        @endif
         @if ($hasTrashed)
             <x-button color="outline" href="{{ route('financial.accounts.trashed') }}" class="bg-white">
                 <x-heroicon-o-trash class="size-5!" />

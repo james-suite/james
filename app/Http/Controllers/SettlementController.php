@@ -187,8 +187,8 @@ class SettlementController extends Controller
      */
     public function create(Request $request, Contact $contact): View
     {
-        $accounts = FinancialAccount::orderBy('name')->get();
-        $cards = FinancialCreditCard::orderBy('name')->get();
+        $accounts = FinancialAccount::active()->orderBy('name')->get();
+        $cards = FinancialCreditCard::active()->orderBy('name')->get();
         $tags = $this->tagOptions();
 
         $settlement = null;

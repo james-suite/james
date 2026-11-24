@@ -1,5 +1,16 @@
 <x-layouts.financial>
-    <x-page-header title="Cartões de Crédito" :action="route('financial.cards.create')" actionText="Novo Cartão" icon="heroicon-o-plus">
+    <x-page-header :title="$showArchived ? 'Cartões Arquivados' : 'Cartões de Crédito'" :action="route('financial.cards.create')" actionText="Novo Cartão" icon="heroicon-o-plus">
+        @if ($showArchived)
+            <x-button color="outline" href="{{ route('financial.cards.index') }}" class="bg-white">
+                <x-heroicon-o-arrow-uturn-left class="size-5!" />
+                Ver Ativos
+            </x-button>
+        @elseif ($hasArchived)
+            <x-button color="outline" href="{{ route('financial.cards.index', ['archived' => 1]) }}" class="bg-white">
+                <x-heroicon-o-archive-box class="size-5!" />
+                Arquivados
+            </x-button>
+        @endif
         @if ($hasTrashed)
             <x-button color="outline" href="{{ route('financial.cards.trashed') }}" class="bg-white">
                 <x-heroicon-o-trash class="size-5!" />

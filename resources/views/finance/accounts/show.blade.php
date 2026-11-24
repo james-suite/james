@@ -44,6 +44,55 @@
             </form>
         </x-modal>
 
+        @if($account->isArchived())
+            <form action="{{ route('financial.accounts.unarchive', $account) }}" method="POST" class="m-0">
+                @csrf
+                @method('PATCH')
+                <x-button type="submit" color="outline" class="bg-white">
+                    <x-heroicon-o-archive-box-arrow-down class="size-4" />
+                    <span class="hidden sm:inline">Reativar</span>
+                </x-button>
+            </form>
+        @else
+            <x-modal.trigger name="archive-account-{{ $account->id }}">
+                <x-button type="button" color="outline" class="bg-white">
+                    <x-heroicon-o-archive-box class="size-4" />
+                    <span class="hidden sm:inline">Arquivar</span>
+                </x-button>
+            </x-modal.trigger>
+
+            <x-modal
+                name="archive-account-{{ $account->id }}"
+                title="Arquivar Conta"
+                confirmVariant="warning">
+                <x-slot:content>
+                    <p class="mb-3">Ao arquivar <strong>{{ $account->name }}</strong>, ela deixará de aparecer nos seletores de novas transações, mantendo todo o histórico e saldo preservados.</p>
+                    @if($account->balance != 0 || $activeCardsCount > 0 || $activeRecurrencesCount > 0)
+                        <div class="rounded-md bg-amber-50 p-3 border border-amber-200 text-left text-amber-800 space-y-1">
+                            <p class="font-semibold">Atenção antes de arquivar:</p>
+                            @if($account->balance != 0)
+                                <p>• Saldo atual: <strong>{{ formatCurrency($account->balance) }}</strong></p>
+                            @endif
+                            @if($activeCardsCount > 0)
+                                <p>• {{ $activeCardsCount }} cartão(ões) de crédito ativo(s) vinculado(s)</p>
+                            @endif
+                            @if($activeRecurrencesCount > 0)
+                                <p>• {{ $activeRecurrencesCount }} recorrência(s) vinculada(s)</p>
+                            @endif
+                        </div>
+                    @endif
+                </x-slot:content>
+
+                <form action="{{ route('financial.accounts.archive', $account) }}" method="POST" class="m-0">
+                    @csrf
+                    @method('PATCH')
+                    <x-button type="submit" class="w-full sm:w-auto">
+                        Arquivar
+                    </x-button>
+                </form>
+            </x-modal>
+        @endif
+
         <x-modal.delete
             action="{{ route('financial.accounts.destroy', $account) }}"
             item-name="a conta"
@@ -64,10 +113,15 @@
                 
                 <div class="flex flex-col gap-2">
                     <h2 class="text-2xl font-bold text-neutral-900">{{ $account->name }}</h2>
-                    <div>
+                    <div class="flex flex-wrap items-center gap-2">
                         <x-badge color="accent" size="sm">
                             {{ $account->type->label() }}
                         </x-badge>
+                        @if($account->isArchived())
+                            <x-badge color="neutral" size="sm">
+                                Arquivada
+                            </x-badge>
+                        @endif
                     </div>
                 </div>
             </div>
