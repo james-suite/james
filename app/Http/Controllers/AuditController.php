@@ -29,13 +29,13 @@ class AuditController extends Controller
      * @var array<class-string<Model>, list<string>>
      */
     private const REVERTIBLE_FIELDS = [
-        Contact::class => ['name', 'notes', 'emails', 'phones', 'addresses', 'pix_keys'],
+        Contact::class => ['name', 'relationship_category', 'birthdate', 'notes', 'emails', 'phones'],
         ContactGroup::class => ['name', 'description'],
-        FinancialAccount::class => ['name', 'pix_keys'],
-        FinancialCreditCard::class => ['name', 'credit_limit'],
+        FinancialAccount::class => ['name', 'type', 'pix_keys', 'archived_at'],
+        FinancialCreditCard::class => ['name', 'credit_limit', 'archived_at'],
         FinancialTag::class => ['name', 'icon', 'color_hex'],
         FinancialTransaction::class => ['description'],
-        FinancialRecurrence::class => ['description'],
+        FinancialRecurrence::class => ['title', 'is_active', 'end_date'],
         Settlement::class => ['description'],
         SettlementGroup::class => ['description'],
     ];
@@ -97,8 +97,7 @@ class AuditController extends Controller
     {
         $activity->load('causer');
 
-        $changes = $activity->attribute_changes ?? $activity->properties;
-        $changesArray = is_object($changes) && method_exists($changes, 'toArray') ? $changes->toArray() : (array) $changes;
+        $changesArray = $this->extractChangesArray($activity);
 
         $old = $changesArray['old'] ?? [];
         $attributes = $changesArray['attributes'] ?? [];
@@ -177,7 +176,7 @@ class AuditController extends Controller
             ];
         });
 
-        $hasRevertibleFields = $parsedChanges->contains(fn (array $change): bool => $change['revertible'] || $change['already_reverted']);
+        $hasRevertibleFields = $this->isUpdatedEvent($activity) && $hasOld;
         $subjectUrl = null;
 
         if (($subject && ! method_exists($subject, 'trashed')) || ($subject && method_exists($subject, 'trashed') && ! $subject->trashed())) {
@@ -233,8 +232,7 @@ class AuditController extends Controller
                 ->with('error', 'Este registro não é elegível para reversão seletiva.');
         }
 
-        $changes = $activity->attribute_changes ?? $activity->properties;
-        $changesArray = is_object($changes) && method_exists($changes, 'toArray') ? $changes->toArray() : (array) $changes;
+        $changesArray = $this->extractChangesArray($activity);
         $old = $changesArray['old'] ?? [];
         $old = is_object($old) ? (array) $old : $old;
 
@@ -277,7 +275,7 @@ class AuditController extends Controller
 
     private function canRevertSubject(Activity $activity, ?Model $subject): bool
     {
-        if ($activity->description !== AuditAction::Updated->value || ! $subject) {
+        if (! $this->isUpdatedEvent($activity) || ! $subject) {
             return false;
         }
 
@@ -292,8 +290,49 @@ class AuditController extends Controller
         return array_key_exists($activity->subject_type, self::REVERTIBLE_FIELDS);
     }
 
+    private function isUpdatedEvent(Activity $activity): bool
+    {
+        $event = $activity->event instanceof \BackedEnum ? $activity->event->value : $activity->event;
+
+        return $activity->description === AuditAction::Updated->value
+            || $event === AuditAction::Updated->value;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function extractChangesArray(Activity $activity): array
+    {
+        $attributeChanges = $activity->attribute_changes;
+        $changes = is_object($attributeChanges) && method_exists($attributeChanges, 'toArray')
+            ? $attributeChanges->toArray()
+            : (array) $attributeChanges;
+
+        if ($changes !== []) {
+            return $changes;
+        }
+
+        $properties = $activity->properties;
+
+        return is_object($properties) && method_exists($properties, 'toArray')
+            ? $properties->toArray()
+            : (array) $properties;
+    }
+
     private function valuesMatch(mixed $left, mixed $right): bool
     {
+        if ($left instanceof \BackedEnum) {
+            $left = $left->value;
+        }
+
+        if ($right instanceof \BackedEnum) {
+            $right = $right->value;
+        }
+
+        if ($left instanceof \DateTimeInterface) {
+            $left = $left->format('Y-m-d');
+        }
+
         if (is_array($left) || is_array($right)) {
             return json_encode($left) === json_encode($right);
         }

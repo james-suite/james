@@ -103,3 +103,31 @@ it('blocks reverting protected tags and soft-deleted subjects', function () {
 
     expect($tag->fresh()->name)->toBe('Tag Alterada');
 });
+
+it('supports reverting legacy logs stored in properties when attribute_changes is empty', function () {
+    $contact = Contact::factory()->create(['relationship_category' => 'Família']);
+    $contact->update(['relationship_category' => 'Trabalho']);
+
+    $log = Activity::query()
+        ->where('subject_type', Contact::class)
+        ->where('subject_id', $contact->id)
+        ->where('description', 'updated')
+        ->latest('id')
+        ->firstOrFail();
+
+    $log->forceFill([
+        'properties' => $log->attribute_changes,
+        'attribute_changes' => [],
+    ])->save();
+
+    $this->get(route('audit.show', $log))
+        ->assertSuccessful()
+        ->assertViewHas('hasRevertibleFields', true);
+
+    $this->post(route('audit.revert', $log), [
+        'fields' => ['relationship_category'],
+    ])->assertRedirect(route('audit.show', $log))
+        ->assertSessionHas('success');
+
+    expect($contact->fresh()->relationship_category)->toBe('Família');
+});

@@ -137,6 +137,8 @@
                                                     </x-modal.trigger>
                                                 @elseif($change['already_reverted'])
                                                     <span class="text-xs text-neutral-400">Revertido</span>
+                                                @else
+                                                    <span class="text-xs text-neutral-300">—</span>
                                                 @endif
                                             </x-table.cell>
                                         @endif
