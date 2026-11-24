@@ -186,24 +186,26 @@ class SettlementGroupService
         $transaction = FinancialTransaction::create($data);
 
         // Item: "Minha Parte" (user's share, tagged with user-selected tags)
-        $myItem = FinancialTransactionItem::create([
-            'financial_transaction_id' => $transaction->id,
-            'description' => 'Minha Parte',
-            'quantity' => 1,
-            'unit_price' => $validated['my_amount'],
-            'total' => $validated['my_amount'],
-        ]);
+        if ($this->amountToCents($validated['my_amount']) > 0) {
+            $myItem = FinancialTransactionItem::create([
+                'financial_transaction_id' => $transaction->id,
+                'description' => 'Minha Parte',
+                'quantity' => 1,
+                'unit_price' => $validated['my_amount'],
+                'total' => $validated['my_amount'],
+            ]);
 
-        // Attach user-selected tags to "Minha Parte"
-        if (! empty($validated['tags'])) {
-            $tagSync = [];
-            foreach ($validated['tags'] as $tagId) {
-                $isPrimary = ! empty($validated['primary_tag_id'])
-                    ? (int) $tagId === (int) $validated['primary_tag_id']
-                    : false;
-                $tagSync[$tagId] = ['is_primary' => $isPrimary];
+            // Attach user-selected tags to "Minha Parte"
+            if (! empty($validated['tags'])) {
+                $tagSync = [];
+                foreach ($validated['tags'] as $tagId) {
+                    $isPrimary = ! empty($validated['primary_tag_id'])
+                        ? (int) $tagId === (int) $validated['primary_tag_id']
+                        : false;
+                    $tagSync[$tagId] = ['is_primary' => $isPrimary];
+                }
+                $myItem->tags()->sync($tagSync);
             }
-            $myItem->tags()->sync($tagSync);
         }
 
         // Items: one per contact (tagged with Reembolso)
@@ -278,12 +280,34 @@ class SettlementGroupService
             return;
         }
 
-        $contactShareCents = intdiv($totalCents, count($contactAmounts) + 1);
-        $expectedMyAmountCents = $totalCents - ($contactShareCents * count($contactAmounts));
+        $includeMe = array_key_exists('include_me', $validated) ? (bool) $validated['include_me'] : true;
+        $contactCount = count($contactAmounts);
 
-        if ($myAmountCents !== $expectedMyAmountCents
-            || collect($contactAmounts)->contains(fn (int $amountCents): bool => $amountCents !== $contactShareCents)) {
+        if ($includeMe) {
+            $contactShareCents = intdiv($totalCents, $contactCount + 1);
+            $expectedMyAmountCents = $totalCents - ($contactShareCents * $contactCount);
+
+            if ($myAmountCents !== $expectedMyAmountCents
+                || collect($contactAmounts)->contains(fn (int $amountCents): bool => $amountCents !== $contactShareCents)) {
+                throw new InvalidArgumentException('Os valores não correspondem à divisão igual.');
+            }
+
+            return;
+        }
+
+        if ($myAmountCents !== 0) {
             throw new InvalidArgumentException('Os valores não correspondem à divisão igual.');
+        }
+
+        $baseShareCents = intdiv($totalCents, $contactCount);
+        $remainderCents = $totalCents % $contactCount;
+
+        foreach ($contactAmounts as $index => $amountCents) {
+            $expectedContactCents = $baseShareCents + ($index < $remainderCents ? 1 : 0);
+
+            if ($amountCents !== $expectedContactCents) {
+                throw new InvalidArgumentException('Os valores não correspondem à divisão igual.');
+            }
         }
     }
 

@@ -56,6 +56,7 @@ class StoreSettlementGroupRequest extends FormRequest
             'my_amount' => ['required', 'numeric', 'decimal:0,2', 'min:0'],
             'date' => ['required', 'date'],
             'mode' => ['required', 'in:equal,exact'],
+            'include_me' => ['boolean'],
             'contacts' => ['required', 'array', 'min:1'],
             'contacts.*.id' => ['required', 'integer', 'distinct:strict', 'exists:contacts,id'],
             'contacts.*.amount' => ['required', 'numeric', 'decimal:0,2', 'min:0.01'],
@@ -100,15 +101,37 @@ class StoreSettlementGroupRequest extends FormRequest
                     return;
                 }
 
-                $contactShareCents = intdiv($totalCents, count($contactAmounts) + 1);
-                $expectedMyAmountCents = $totalCents - ($contactShareCents * count($contactAmounts));
+                $includeMe = array_key_exists('include_me', $validated) ? (bool) $validated['include_me'] : true;
+                $contactCount = count($contactAmounts);
 
-                if ($myAmountCents !== $expectedMyAmountCents) {
-                    $validator->errors()->add('my_amount', 'A sua parte não corresponde à divisão igual.');
+                if ($includeMe) {
+                    $contactShareCents = intdiv($totalCents, $contactCount + 1);
+                    $expectedMyAmountCents = $totalCents - ($contactShareCents * $contactCount);
+
+                    if ($myAmountCents !== $expectedMyAmountCents) {
+                        $validator->errors()->add('my_amount', 'A sua parte não corresponde à divisão igual.');
+                    }
+
+                    foreach ($contactAmounts as $index => $amountCents) {
+                        if ($amountCents !== $contactShareCents) {
+                            $validator->errors()->add("contacts.$index.amount", 'O valor não corresponde à divisão igual.');
+                        }
+                    }
+
+                    return;
                 }
 
+                if ($myAmountCents !== 0) {
+                    $validator->errors()->add('my_amount', 'A sua parte deve ser zero quando você não participa do consumo.');
+                }
+
+                $baseShareCents = intdiv($totalCents, $contactCount);
+                $remainderCents = $totalCents % $contactCount;
+
                 foreach ($contactAmounts as $index => $amountCents) {
-                    if ($amountCents !== $contactShareCents) {
+                    $expectedContactCents = $baseShareCents + ($index < $remainderCents ? 1 : 0);
+
+                    if ($amountCents !== $expectedContactCents) {
                         $validator->errors()->add("contacts.$index.amount", 'O valor não corresponde à divisão igual.');
                     }
                 }

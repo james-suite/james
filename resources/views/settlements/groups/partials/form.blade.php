@@ -49,7 +49,7 @@
 
             <div class="space-y-3">
                 <!-- Minha Parte -->
-                <div class="flex items-center gap-4 p-4 rounded-xl border border-accent/30 bg-accent/5">
+                <div class="flex items-center gap-4 p-4 rounded-xl border border-accent/30 bg-accent/5" x-show="mode === 'exact' || includeMe">
                     <div class="shrink-0 flex items-center justify-center w-10 h-10 rounded-md bg-accent/20 text-accent font-bold text-sm">
                         EU
                     </div>
@@ -68,9 +68,9 @@
                         <template x-if="mode === 'exact'">
                             <x-form-input name="my_amount" :currency="true" placeholder="0,00" class="text-right font-medium" x-model="myAmount" />
                         </template>
-                        <input x-show="mode === 'equal'" type="hidden" name="my_amount" :value="calculatedMyAmount.toFixed(2)">
                     </div>
                 </div>
+                <input x-show="mode === 'equal'" type="hidden" name="my_amount" :value="calculatedMyAmount.toFixed(2)">
 
                 <!-- Contatos -->
                 <template x-for="(contact, index) in contacts" :key="contact.id">
@@ -129,6 +129,11 @@
                 <x-radio-block name="mode" x-model="mode" value="exact" icon="heroicon-o-pencil" label="Valores Exatos" />
             </x-radio-block-group>
 
+            <div class="pt-2" x-show="mode === 'equal'" x-transition>
+                <input type="hidden" name="include_me" value="0">
+                <x-switch name="include_me" x-model="includeMe" label="Eu participei do consumo" value="1" color="accent" />
+            </div>
+
             {{-- Transação Financeira --}}
             <div class="space-y-4 pt-4 border-t border-neutral-100">
                 <input type="hidden" name="create_transaction" value="0">
@@ -162,7 +167,7 @@
                         </div>
                     </div>
 
-                    <div class="pt-2">
+                    <div class="pt-2" x-show="mode === 'exact' || includeMe">
                         <x-tags-selector name="tags[]" :options="$tags" label="Categoria (Minha Parte)" :value="old('tags', isset($existingTagIds) ? $existingTagIds : [])" :primaryValue="old('primary_tag_id', isset($existingPrimaryTagId) ? $existingPrimaryTagId : null)" />
                     </div>
                 </div>

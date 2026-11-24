@@ -161,6 +161,59 @@ it('rejects equal divisions that do not follow the ui cent remainder policy', fu
     ])->assertSessionHasErrors(['my_amount', 'contacts.0.amount']);
 });
 
+it('allows equal divisions without including the authenticated user', function () {
+    $contacts = Contact::factory()->count(3)->create();
+
+    $this->post(route('settlements.groups.store'), [
+        'description' => 'Jantar dos amigos',
+        'total_amount' => '100.00',
+        'date' => '2023-01-01',
+        'mode' => 'equal',
+        'include_me' => false,
+        'my_amount' => '0.00',
+        'create_transaction' => false,
+        'contacts' => [
+            ['id' => $contacts[0]->id, 'amount' => '33.34'],
+            ['id' => $contacts[1]->id, 'amount' => '33.33'],
+            ['id' => $contacts[2]->id, 'amount' => '33.33'],
+        ],
+    ])->assertRedirect(route('settlements.index'));
+
+    $group = SettlementGroup::query()->sole();
+
+    expect($group->settlements()->orderBy('id')->pluck('amount')->all())->toEqual([33.34, 33.33, 33.33]);
+});
+
+it('skips creating a zero-value personal item when include_me is false', function () {
+    FinancialTag::factory()->create([
+        'id' => FinancialTag::REEMBOLSO_ID,
+        'name' => 'Reembolso',
+    ]);
+    $contacts = Contact::factory()->count(3)->create();
+    $account = FinancialAccount::factory()->create();
+
+    $this->post(route('settlements.groups.store'), [
+        'description' => 'Compra só de terceiros',
+        'total_amount' => '120.00',
+        'date' => '2023-01-01',
+        'mode' => 'equal',
+        'include_me' => false,
+        'my_amount' => '0.00',
+        'create_transaction' => true,
+        'targetType' => 'account',
+        'financial_account_id' => $account->id,
+        'contacts' => $contacts->map(fn (Contact $contact): array => [
+            'id' => $contact->id,
+            'amount' => '40.00',
+        ])->all(),
+    ])->assertRedirect(route('settlements.index'));
+
+    $transaction = FinancialTransaction::query()->latest('id')->firstOrFail();
+
+    expect($transaction->items)->toHaveCount(3)
+        ->and($transaction->items->where('description', 'Minha Parte'))->toBeEmpty();
+});
+
 it('can view edit screen', function () {
     $group = SettlementGroup::create([
         'description' => 'Test',
