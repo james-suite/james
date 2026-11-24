@@ -8,9 +8,14 @@ use App\Http\Requests\StoreFinancialAccountRequest;
 use App\Http\Requests\UpdateFinancialAccountRequest;
 use App\Models\FinancialAccount;
 use App\Models\FinancialTag;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Throwable;
 
 class FinancialAccountController extends Controller
 {
@@ -37,6 +42,51 @@ class FinancialAccountController extends Controller
         $hasArchived = FinancialAccount::archived()->exists();
 
         return view('finance.accounts.index', compact('accounts', 'hasTrashed', 'hasArchived', 'showArchived'));
+    }
+
+    /**
+     * Search Brazilian financial institutions via BrasilAPI (cached).
+     */
+    public function banks(Request $request): JsonResponse
+    {
+        $banks = Cache::remember('brasilapi.banks.v1', now()->addDay(), function (): array {
+            try {
+                $response = Http::timeout(5)
+                    ->connectTimeout(3)
+                    ->acceptJson()
+                    ->get('https://brasilapi.com.br/api/banks/v1');
+
+                if (! $response->successful()) {
+                    return [];
+                }
+
+                return collect($response->json())
+                    ->filter(fn ($bank): bool => is_array($bank) && filled($bank['name'] ?? null))
+                    ->map(fn (array $bank): array => [
+                        'code' => isset($bank['code']) ? (string) $bank['code'] : null,
+                        'name' => trim((string) $bank['name']),
+                        'full_name' => trim((string) ($bank['fullName'] ?? $bank['name'])),
+                    ])
+                    ->unique('name')
+                    ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+                    ->values()
+                    ->all();
+            } catch (Throwable) {
+                return [];
+            }
+        });
+
+        $search = Str::lower(trim((string) $request->query('search', '')));
+
+        if ($search !== '') {
+            $banks = array_values(array_filter($banks, static function (array $bank) use ($search): bool {
+                return Str::contains(Str::lower($bank['name']), $search)
+                    || Str::contains(Str::lower($bank['full_name']), $search)
+                    || ($bank['code'] !== null && Str::contains($bank['code'], $search));
+            }));
+        }
+
+        return response()->json($banks);
     }
 
     /**

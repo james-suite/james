@@ -13,7 +13,7 @@ enum FinancialAccountType: string
         return match ($this) {
             self::Checking => 'Conta Corrente',
             self::Investment => 'Investimentos',
-            self::Wallet => 'Carteira',
+            self::Wallet => 'Dinheiro físico',
         };
     }
 
