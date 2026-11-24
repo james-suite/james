@@ -1,9 +1,15 @@
 @props(['fallback', 'text' => 'Voltar', 'icon' => 'heroicon-o-arrow-left'])
 
 @php
-    $href = app(\App\Support\SafeBackUrl::class)->resolve(
-        url()->previous(),
+    $safeBackUrl = app(\App\Support\SafeBackUrl::class);
+    $effectiveFallback = $safeBackUrl->resolveFallback(
         $fallback,
+        session(\App\Http\Middleware\RememberListingUrl::SESSION_KEY, []),
+        url('/'),
+    );
+    $href = $safeBackUrl->resolve(
+        url()->previous(),
+        $effectiveFallback,
         request()->fullUrl(),
         url('/'),
     );

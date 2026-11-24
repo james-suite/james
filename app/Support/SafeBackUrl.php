@@ -8,6 +8,34 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 final class SafeBackUrl
 {
+    /**
+     * @param  array<string, string>  $rememberedUrls
+     */
+    public function resolveFallback(string $fallback, array $rememberedUrls, string $applicationUrl): string
+    {
+        $parsedFallback = parse_url($fallback);
+        $parsedApp = parse_url($applicationUrl);
+
+        if (! is_array($parsedFallback) || ! is_array($parsedApp) || ! empty($parsedFallback['query'])) {
+            return $fallback;
+        }
+
+        $path = $parsedFallback['path'] ?? '/';
+        $remembered = $rememberedUrls[$path] ?? null;
+
+        if (! is_string($remembered)) {
+            return $fallback;
+        }
+
+        $parsedRemembered = parse_url($remembered);
+
+        if (! is_array($parsedRemembered) || ! $this->sameOrigin($parsedRemembered, $parsedApp)) {
+            return $fallback;
+        }
+
+        return $remembered;
+    }
+
     public function resolve(
         ?string $previousUrl,
         string $fallback,
