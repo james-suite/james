@@ -65,7 +65,7 @@
                                 <span class="block truncate text-sm font-semibold text-neutral-900 group-hover:text-brand-700">{{ $contact->name }}</span>
                                 <span class="mt-0.5 block text-xs text-neutral-500">{{ $contact->net_balance > 0 ? 'Você tem a receber' : 'Você tem a pagar' }}</span>
                             </span>
-                            <span class="shrink-0 text-sm font-bold {{ $contact->net_balance > 0 ? 'text-green-700' : 'text-red-700' }}">
+                            <span class="shrink-0 text-sm font-bold tabular-nums {{ $contact->net_balance > 0 ? 'text-green-700' : 'text-red-700' }}">
                                 {{ formatCurrency(abs($contact->net_balance)) }}
                             </span>
                         </a>

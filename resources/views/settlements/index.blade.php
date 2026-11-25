@@ -329,22 +329,22 @@
             <div class="flex flex-wrap items-center justify-end gap-2 justify-self-end">
                 @if($showArchived)
                     <x-modal.trigger name="bulk-unarchive">
-                        <x-button type="button" color="primary">
+                        <x-button type="button">
                             <x-heroicon-o-arrow-path class="size-4" />
                             <span class="hidden sm:inline">Desarquivar</span>
                         </x-button>
                     </x-modal.trigger>
                 @else
-                    <x-button type="button" color="primary" class="bg-neutral-800 hover:bg-neutral-900 border-neutral-800 text-white transition-all" @click="openShareModal()">
+                    <x-button type="button" @click="openShareModal()">
                         <x-heroicon-o-share class="size-4" />
                         <span class="hidden sm:inline">Compartilhar</span>
                     </x-button>
-                    <x-button type="button" @click="window.location = '{{ route('settlements.groups.create') }}?contacts=' + selectedIds.join(',')" color="primary">
+                    <x-button type="button" @click="window.location = '{{ route('settlements.groups.create') }}?contacts=' + selectedIds.join(',')">
                         <x-heroicon-o-chart-pie class="size-4" />
                         <span class="hidden sm:inline">Dividir Conta</span>
                     </x-button>
                     <x-modal.trigger name="bulk-archive">
-                        <x-button type="button" color="primary" class="bg-amber-500 hover:bg-amber-600 text-white border-amber-500">
+                        <x-button type="button">
                             <x-heroicon-o-archive-box class="size-4" />
                             <span class="hidden sm:inline">Arquivar</span>
                         </x-button>
@@ -364,7 +364,7 @@
             name="bulk-archive"
             title="Arquivar Acertos" 
             message="Tem certeza que deseja arquivar os acertos dos contatos selecionados? Eles não aparecerão na lista principal até que sejam desarquivados." 
-            confirmVariant="primary">
+            confirmVariant="warning">
             <x-button type="button" class="w-full sm:w-auto" @click="archiveSelected()">
                 Sim, arquivar
             </x-button>
@@ -374,7 +374,7 @@
             name="bulk-unarchive"
             title="Desarquivar Acertos" 
             message="Tem certeza que deseja desarquivar os acertos dos contatos selecionados? Eles voltarão a aparecer na lista principal." 
-            confirmVariant="primary">
+            confirmVariant="info">
             <x-button type="button" class="w-full sm:w-auto" @click="unarchiveSelected()">
                 Sim, desarquivar
             </x-button>
@@ -383,7 +383,7 @@
         <x-modal 
             name="share-modal"
             title="Copiar Mensagem" 
-            confirmVariant="primary"
+            confirmVariant="none"
             hideFooter="true">
             <x-slot:content>
                 <div class="space-y-4">
@@ -409,7 +409,7 @@
                             <x-heroicon-o-chat-bubble-oval-left-ellipsis class="size-4 text-green-600" />
                             <span>WhatsApp</span>
                         </x-button>
-                        <x-button type="button" color="primary" class="bg-neutral-800 hover:bg-neutral-900 border-neutral-800 text-white w-full sm:w-auto" @click="executeCopy()">
+                        <x-button type="button" class="w-full sm:w-auto" @click="executeCopy()">
                             <span class="flex items-center gap-1.5"><x-heroicon-o-clipboard-document class="size-4" /> Copiar</span>
                         </x-button>
                     </div>

@@ -50,7 +50,7 @@
                     :max="$limit" 
                     :showValue="false" 
                 />
-                <div class="flex justify-between items-center text-[10px] text-neutral-500 mt-1.5">
+                <div class="flex justify-between items-center text-[10px] tabular-nums text-neutral-500 mt-1.5">
                     <span>Usado: {{ formatCurrency($usedLimit) }}</span>
                     <span>Limite: {{ formatCurrency($limit) }}</span>
                 </div>
@@ -60,7 +60,7 @@
         <div class="flex justify-between items-end border-t border-neutral-100 pt-3 mt-auto">
             <div>
                 <div class="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-1">Fatura Atual</div>
-                <div class="font-bold text-base leading-none {{ $invoiceStatus === \App\Enums\InvoiceStatus::Paid ? 'text-green-600' : 'text-neutral-900' }}">
+                <div class="font-bold text-base tabular-nums leading-none {{ $invoiceStatus === \App\Enums\InvoiceStatus::Paid ? 'text-green-600' : 'text-neutral-900' }}">
                     {{ formatCurrency($invoiceTotal) }}
                 </div>
             </div>

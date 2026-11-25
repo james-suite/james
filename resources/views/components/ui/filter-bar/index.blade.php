@@ -21,9 +21,10 @@
 
 <form
     {{ $attributes->merge(['action' => $action, 'method' => 'GET', 'class' => "t-acc min-w-0 max-w-full flex flex-col sm:flex-row items-stretch {$alignClass} gap-0 sm:gap-1 mb-8 bg-white p-1 rounded-xl border border-neutral-200 shadow-sm w-full sm:w-fit sm:overflow-x-auto sm:overflow-y-hidden sm:scroll-fade-x sm:overscroll-x-contain transition-all focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/40"]) }}
-    x-data="{ loading: false, expanded: @js(!$showMobileToggle) }"
+    x-data="{ loading: false, expanded: @js(!$showMobileToggle), searchQuery: {{ Js::from((string) $searchValue) }} }"
     data-open="{{ $showMobileToggle ? 'false' : 'true' }}"
     x-bind:data-open="expanded"
+    @keydown.window="if ($event.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes($event.target.tagName) && !$event.target.isContentEditable && $refs.searchInput) { $event.preventDefault(); $refs.searchInput.focus(); }"
     @submit="loading = true"
 >
     <!-- Top Bar (Mobile + Desktop) -->
@@ -33,8 +34,24 @@
                 <div class="absolute left-3 flex items-center pointer-events-none">
                     <x-heroicon-m-magnifying-glass class="h-4 w-4 text-neutral-400" />
                 </div>
-                <input type="text" name="{{ $searchName }}" value="{{ $searchValue }}" placeholder="{{ $searchPlaceholder }}"
-                       class="w-full pl-9 pr-3 py-2 sm:py-1.5 bg-transparent border-0 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0">
+                <input
+                    x-ref="searchInput"
+                    type="text"
+                    name="{{ $searchName }}"
+                    x-model="searchQuery"
+                    placeholder="{{ $searchPlaceholder }}"
+                    class="w-full pl-9 pr-8 py-2 sm:py-1.5 bg-transparent border-0 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0"
+                >
+                <button
+                    type="button"
+                    class="absolute right-2 inline-flex size-6 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 cursor-pointer transition-colors"
+                    aria-label="Limpar busca"
+                    x-show="searchQuery.length > 0"
+                    x-cloak
+                    @click="searchQuery = ''; $refs.searchInput.focus()"
+                >
+                    <x-heroicon-m-x-mark class="size-3.5" />
+                </button>
             </div>
         @endif
 

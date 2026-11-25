@@ -18,7 +18,7 @@
             <x-modal 
                 name="share-modal-{{ $contact->id }}"
                 title="Copiar Mensagem" 
-                confirmVariant="primary"
+                confirmVariant="none"
                 hideFooter="true">
                 <x-slot:content>
                     <div class="space-y-4" x-data="{
@@ -82,7 +82,7 @@
                                 <x-heroicon-o-chat-bubble-oval-left-ellipsis class="size-4 text-green-600" />
                                 <span>WhatsApp</span>
                             </x-button>
-                            <x-button type="button" color="primary" class="bg-neutral-800 hover:bg-neutral-900 border-neutral-800 text-white w-full sm:w-auto" @click="copyText()">
+                            <x-button type="button" class="w-full sm:w-auto" @click="copyText()">
                                 <span class="flex items-center gap-1.5"><x-heroicon-o-clipboard-document class="size-4" /> Copiar</span>
                             </x-button>
                         </div>
@@ -101,7 +101,7 @@
                 name="archive-contact-{{ $contact->id }}"
                 title="Arquivar Acertos" 
                 message="Tem certeza que deseja arquivar os acertos com este contato? Ele não aparecerá na lista principal até que seja desarquivado." 
-                confirmVariant="primary">
+                confirmVariant="warning">
                 <form action="{{ route('settlements.archive') }}" method="POST" class="m-0">
                     @csrf
                     <input type="hidden" name="contact_ids[]" value="{{ $contact->id }}">

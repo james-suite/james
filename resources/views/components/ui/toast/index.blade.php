@@ -24,7 +24,10 @@
                 progress: 100,
                 message: {{ Js::from($initialMessage) }},
                 type: {{ Js::from($initialType) }},
-                timer: null,
+                durationMs: 4000,
+                remainingMs: 4000,
+                lastTickAt: null,
+                paused: false,
                 interval: null,
                 init() {
                     window.addEventListener('toast', (event) => this.showToast(event.detail));
@@ -40,23 +43,43 @@
                     this.startTimer();
                 },
                 startTimer() {
-                    clearTimeout(this.timer);
                     clearInterval(this.interval);
+                    this.durationMs = this.type === 'error' ? 5000 : 4000;
+                    this.remainingMs = this.durationMs;
                     this.progress = 100;
+                    this.paused = false;
+                    this.lastTickAt = Date.now();
+                    this.runInterval();
+                },
+                runInterval() {
+                    clearInterval(this.interval);
                     this.interval = setInterval(() => {
-                        this.progress -= 2;
-                        if (this.progress <= 0) {
-                            clearInterval(this.interval);
+                        if (this.paused) return;
+                        const now = Date.now();
+                        const elapsed = now - (this.lastTickAt ?? now);
+                        this.lastTickAt = now;
+                        this.remainingMs = Math.max(0, this.remainingMs - elapsed);
+                        this.progress = (this.remainingMs / this.durationMs) * 100;
+                        if (this.remainingMs <= 0) {
+                            this.close();
                         }
                     }, 50);
-                    this.timer = setTimeout(() => this.show = false, 2500);
+                },
+                pauseTimer() {
+                    this.paused = true;
+                },
+                resumeTimer() {
+                    if (!this.show) return;
+                    this.paused = false;
+                    this.lastTickAt = Date.now();
                 },
                 close() {
-                    clearTimeout(this.timer);
                     clearInterval(this.interval);
                     this.show = false;
                 }
             }" x-show="show" x-cloak
+            @mouseenter="pauseTimer()"
+            @mouseleave="resumeTimer()"
             x-transition:enter="transition motion-ease-smooth-out motion-duration-medium transform"
             x-transition:enter-start="translate-x-full opacity-0" x-transition:enter-end="translate-x-0 opacity-100"
             x-transition:leave="transition motion-ease-smooth-out motion-duration-fast transform is-leaving"

@@ -123,7 +123,7 @@
 
                 <x-table.cell align="right">
                     <div class="flex w-full min-w-0 justify-end gap-2">
-                        <span class="font-bold tracking-tight text-base {{ $transaction->type === 'expense' ? 'text-red-600' : 'text-green-600' }}">
+                        <span class="font-bold tracking-tight tabular-nums text-base {{ $transaction->type === 'expense' ? 'text-red-600' : 'text-green-600' }}">
                             {{ $transaction->type === 'expense' ? '-' : '+' }} {{ formatCurrency($transaction->amount) }}
                         </span>
                     </div>
@@ -167,7 +167,7 @@
                             </div>
                         </div>
                         <div class="shrink-0 text-right">
-                            <div class="font-bold tracking-tight text-base {{ $transaction->type === 'expense' ? 'text-red-600' : 'text-green-600' }}">
+                            <div class="font-bold tracking-tight tabular-nums text-base {{ $transaction->type === 'expense' ? 'text-red-600' : 'text-green-600' }}">
                                 {{ $transaction->type === 'expense' ? '-' : '+' }} {{ formatCurrency($transaction->amount) }}
                             </div>
                         </div>

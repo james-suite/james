@@ -45,7 +45,7 @@
                             @elseif($account->balance > 0)
                                 <x-heroicon-o-arrow-trending-up class="size-4" />
                             @endif
-                            <span class="font-bold text-base leading-none tracking-tight">
+                            <span class="font-bold text-base tabular-nums leading-none tracking-tight">
                                 {{ formatCurrency($account->balance) }}
                             </span>
                         </div>

@@ -52,7 +52,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-1 sm:mb-2">
                 <p class="text-xs sm:text-sm font-medium text-neutral-500 leading-tight break-words {{ $href ? 'group-hover:text-brand-600 transition-colors' : '' }}">{{ $title }}</p>
             </div>
-            <p class="text-lg sm:text-2xl font-bold tracking-tight leading-tight break-words {{ $theme['text'] }} {{ $href ? $theme['hoverText'] . ' transition-colors' : '' }}">
+            <p class="text-lg sm:text-2xl font-bold tracking-tight tabular-nums leading-tight break-words {{ $theme['text'] }} {{ $href ? $theme['hoverText'] . ' transition-colors' : '' }}">
                 {{ $value }}
             </p>
             @if($slot->isNotEmpty())
