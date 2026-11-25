@@ -110,15 +110,27 @@
                             <p class="text-xs text-neutral-500 mt-0.5">Absorve o resto dos centavos</p>
                         </template>
                     </div>
-                    <div class="w-36 shrink-0">
-                        <template x-if="mode === 'equal'">
-                            <div class="{{ $calculatedAmountClasses }}">
-                                <span x-text="formatMoney(calculatedMyAmount)"></span>
-                            </div>
-                        </template>
-                        <template x-if="mode === 'exact'">
-                            <x-form-input name="my_amount" :currency="true" placeholder="0,00" class="text-right font-medium" x-model="myAmount" />
-                        </template>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <div class="w-36">
+                            <template x-if="mode === 'equal'">
+                                <div class="{{ $calculatedAmountClasses }}">
+                                    <span x-text="formatMoney(calculatedMyAmount)"></span>
+                                </div>
+                            </template>
+                            <template x-if="mode === 'exact'">
+                                <x-form-input name="my_amount" :currency="true" placeholder="0,00" class="text-right font-medium" x-model="myAmount" />
+                            </template>
+                        </div>
+                        <button
+                            type="button"
+                            class="flex size-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
+                            aria-label="Remover minha parte"
+                            x-show="mode === 'equal'"
+                            @click="includeMe = false"
+                        >
+                            <x-heroicon-o-x-mark class="size-4" />
+                        </button>
+                        <div class="size-9 shrink-0" x-show="mode === 'exact' && contacts.length > 1" aria-hidden="true"></div>
                     </div>
                 </div>
                 <input x-show="mode === 'equal'" type="hidden" name="my_amount" :value="calculatedMyAmount.toFixed(2)">
@@ -159,6 +171,7 @@
                             >
                                 <x-heroicon-o-x-mark class="size-4" />
                             </button>
+                            <div class="size-9 shrink-0" x-show="contacts.length <= 1 && mode === 'equal'" aria-hidden="true"></div>
                         </div>
                     </div>
                 </template>
