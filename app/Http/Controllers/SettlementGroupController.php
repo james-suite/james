@@ -58,6 +58,7 @@ class SettlementGroupController extends Controller
 
         abort_if($contacts->isEmpty(), 404);
 
+        $allContacts = Contact::with('media')->orderBy('name')->get();
         $accounts = FinancialAccount::active()->orderBy('name')->get();
         $cards = FinancialCreditCard::active()->orderBy('name')->get();
         $tags = FinancialTag::orderBy('name')->get()->map(function ($tag) {
@@ -69,7 +70,7 @@ class SettlementGroupController extends Controller
             ];
         });
 
-        return view('settlements.groups.create', compact('contacts', 'accounts', 'cards', 'tags'));
+        return view('settlements.groups.create', compact('contacts', 'allContacts', 'accounts', 'cards', 'tags'));
     }
 
     /**
@@ -100,10 +101,20 @@ class SettlementGroupController extends Controller
     {
         $settlementGroup->load(['media', 'settlements.contact.media', 'financialTransaction.items.tags', 'financialTransaction.tags']);
 
-        $contacts = $settlementGroup->settlements->map(fn ($s) => $s->contact)->unique('id');
+        $contacts = $settlementGroup->settlements->map(fn ($s) => $s->contact)->filter()->unique('id');
+        $allContacts = Contact::with('media')->orderBy('name')->get();
 
-        $accounts = FinancialAccount::active()->orderBy('name')->get();
-        $cards = FinancialCreditCard::active()->orderBy('name')->get();
+        $existingAccountId = $settlementGroup->financialTransaction?->financial_account_id;
+        $existingCardId = $settlementGroup->financialTransaction?->invoice?->financial_credit_card_id;
+
+        $accounts = FinancialAccount::query()
+            ->where(fn ($query) => $query->active()->when($existingAccountId, fn ($q) => $q->orWhere('id', $existingAccountId)))
+            ->orderBy('name')
+            ->get();
+        $cards = FinancialCreditCard::query()
+            ->where(fn ($query) => $query->active()->when($existingCardId, fn ($q) => $q->orWhere('id', $existingCardId)))
+            ->orderBy('name')
+            ->get();
         $tags = FinancialTag::orderBy('name')->get()->map(function ($tag) {
             return [
                 'id' => $tag->id,
@@ -113,7 +124,7 @@ class SettlementGroupController extends Controller
             ];
         });
 
-        return view('settlements.groups.edit', compact('settlementGroup', 'contacts', 'accounts', 'cards', 'tags'));
+        return view('settlements.groups.edit', compact('settlementGroup', 'contacts', 'allContacts', 'accounts', 'cards', 'tags'));
     }
 
     /**

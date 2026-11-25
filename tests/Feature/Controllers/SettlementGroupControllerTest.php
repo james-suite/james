@@ -215,6 +215,7 @@ it('skips creating a zero-value personal item when include_me is false', functio
 });
 
 it('can view edit screen', function () {
+    $contact = Contact::factory()->create();
     $group = SettlementGroup::create([
         'description' => 'Test',
         'total_amount' => 100,
@@ -222,7 +223,48 @@ it('can view edit screen', function () {
         'mode' => 'equal',
     ]);
 
-    $this->get(route('settlements.groups.edit', $group))->assertSuccessful();
+    $this->get(route('settlements.groups.edit', $group))
+        ->assertSuccessful()
+        ->assertViewHas('allContacts', fn ($contacts) => $contacts->contains('id', $contact->id));
+});
+
+it('can add and remove contacts when updating a settlement group', function () {
+    $contact1 = Contact::factory()->create(['name' => 'Ana']);
+    $contact2 = Contact::factory()->create(['name' => 'Bruno']);
+    $contact3 = Contact::factory()->create(['name' => 'Carla']);
+
+    $group = SettlementGroup::create([
+        'description' => 'Jantar',
+        'total_amount' => 100,
+        'date' => '2023-01-01',
+        'mode' => 'equal',
+    ]);
+
+    Settlement::create([
+        'contact_id' => $contact1->id,
+        'settlement_group_id' => $group->id,
+        'type' => 'they_owe',
+        'amount' => 50,
+        'description' => 'Jantar - Ana',
+        'date' => '2023-01-01',
+    ]);
+
+    $this->put(route('settlements.groups.update', $group), [
+        'description' => 'Jantar Atualizado',
+        'total_amount' => 150,
+        'date' => '2023-01-02',
+        'mode' => 'equal',
+        'include_me' => true,
+        'my_amount' => 50,
+        'create_transaction' => false,
+        'contacts' => [
+            ['id' => $contact2->id, 'amount' => 50],
+            ['id' => $contact3->id, 'amount' => 50],
+        ],
+    ])->assertRedirect(route('settlements.index'));
+
+    expect($group->fresh()->settlements()->pluck('contact_id')->all())
+        ->toEqualCanonicalizing([$contact2->id, $contact3->id]);
 });
 
 it('can update a settlement group', function () {

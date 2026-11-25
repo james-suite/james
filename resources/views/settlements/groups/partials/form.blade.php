@@ -45,7 +45,58 @@
 
         <!-- Participantes -->
         <x-card>
-            <h3 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-6">Participantes</h3>
+            <div class="flex items-center justify-between gap-3 mb-6">
+                <h3 class="text-xs font-bold text-neutral-400 uppercase tracking-widest">Participantes</h3>
+
+                <div class="relative" x-show="allContacts.length > contacts.length" @click.outside="contactPickerOpen = false">
+                    <x-button
+                        type="button"
+                        color="outline"
+                        class="min-h-9! py-1.5! px-3! text-xs! bg-white"
+                        @click="contactPickerOpen = !contactPickerOpen; if (contactPickerOpen) $nextTick(() => $refs.contactSearchInput?.focus())"
+                    >
+                        <x-heroicon-o-user-plus class="size-4" />
+                        <span>Adicionar pessoa</span>
+                    </x-button>
+
+                    <div
+                        class="absolute right-0 z-20 mt-2 w-72 rounded-xl border border-neutral-200 bg-white p-2"
+                        x-show="contactPickerOpen"
+                        x-cloak
+                    >
+                        <input
+                            type="text"
+                            x-ref="contactSearchInput"
+                            x-model="contactSearch"
+                            placeholder="Buscar contato..."
+                            class="mb-2 h-9 w-full rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
+                            @keydown.escape.prevent.stop="contactPickerOpen = false"
+                        >
+                        <ul class="max-h-52 overflow-y-auto space-y-0.5">
+                            <template x-for="candidate in availableContactsToAdd" :key="candidate.id">
+                                <li>
+                                    <button
+                                        type="button"
+                                        class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 cursor-pointer"
+                                        @click="addContact(candidate)"
+                                    >
+                                        <template x-if="candidate.avatar_url">
+                                            <img :src="candidate.avatar_url" :alt="candidate.name" class="size-7 rounded-md object-cover border border-neutral-200 shrink-0">
+                                        </template>
+                                        <template x-if="!candidate.avatar_url">
+                                            <span class="flex size-7 items-center justify-center rounded-md bg-neutral-200 text-xs font-medium text-neutral-700 shrink-0" x-text="candidate.initials"></span>
+                                        </template>
+                                        <span class="truncate font-medium" x-text="candidate.name"></span>
+                                    </button>
+                                </li>
+                            </template>
+                            <li class="px-2.5 py-3 text-center text-xs text-neutral-400" x-show="availableContactsToAdd.length === 0">
+                                Nenhum contato disponível.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
             <div class="space-y-3">
                 <!-- Minha Parte -->
@@ -86,17 +137,28 @@
                         <div class="flex-1 min-w-0">
                             <span class="text-sm font-semibold text-neutral-900 truncate block" x-text="contact.name"></span>
                         </div>
-                        <div class="w-36 shrink-0">
-                            <input type="hidden" :name="'contacts[' + index + '][id]'" :value="contact.id">
-                            <template x-if="mode === 'equal'">
-                                <div class="{{ $calculatedAmountClasses }}">
-                                    <span x-text="formatMoney(parseFloat(contact.amount) || 0)"></span>
-                                    <input type="hidden" :name="'contacts[' + index + '][amount]'" :value="contact.amount">
-                                </div>
-                            </template>
-                            <template x-if="mode === 'exact'">
-                                <x-form-input :name="''" x-bind:name="'contacts[' + index + '][amount]'" :currency="true" placeholder="0,00" class="text-right font-medium" x-model="contact.amount" />
-                            </template>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <div class="w-36">
+                                <input type="hidden" :name="'contacts[' + index + '][id]'" :value="contact.id">
+                                <template x-if="mode === 'equal'">
+                                    <div class="{{ $calculatedAmountClasses }}">
+                                        <span x-text="formatMoney(parseFloat(contact.amount) || 0)"></span>
+                                        <input type="hidden" :name="'contacts[' + index + '][amount]'" :value="contact.amount">
+                                    </div>
+                                </template>
+                                <template x-if="mode === 'exact'">
+                                    <x-form-input :name="''" x-bind:name="'contacts[' + index + '][amount]'" :currency="true" placeholder="0,00" class="text-right font-medium" x-model="contact.amount" />
+                                </template>
+                            </div>
+                            <button
+                                type="button"
+                                class="flex size-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
+                                aria-label="Remover participante"
+                                x-show="contacts.length > 1"
+                                @click="removeContact(contact.id)"
+                            >
+                                <x-heroicon-o-x-mark class="size-4" />
+                            </button>
                         </div>
                     </div>
                 </template>

@@ -23,6 +23,15 @@
             }
         }
         
+        $availableContacts = collect($allContacts ?? $contacts)->map(fn($c) => [
+            'id' => $c->id,
+            'name' => $c->name,
+            'avatar_url' => $c->avatar,
+            'initials' => $c->initials(),
+        ])->values();
+
+        $availableContactsById = $availableContacts->keyBy('id');
+
         $existingContacts = $settlementGroup->settlements->map(fn($s) => [
             'id' => $s->contact->id,
             'name' => $s->contact->name,
@@ -33,13 +42,17 @@
         
         $existingMyAmount = $settlementGroup->total_amount - $settlementGroup->settlements->sum('amount');
 
-        $alpineContacts = old('contacts') ? collect(old('contacts'))->map(fn($c, $i) => [
-            'id' => $c['id'],
-            'name' => $existingContacts[$i]['name'] ?? '',
-            'avatar_url' => $existingContacts[$i]['avatar_url'] ?? null,
-            'initials' => $existingContacts[$i]['initials'] ?? '',
-            'amount' => $c['amount'] ?? '',
-        ])->values() : $existingContacts;
+        $alpineContacts = old('contacts') ? collect(old('contacts'))->map(function ($c) use ($availableContactsById) {
+            $found = $availableContactsById->get((int) ($c['id'] ?? 0));
+
+            return [
+                'id' => (int) ($c['id'] ?? 0),
+                'name' => $found['name'] ?? '',
+                'avatar_url' => $found['avatar_url'] ?? null,
+                'initials' => $found['initials'] ?? '',
+                'amount' => $c['amount'] ?? '',
+            ];
+        })->values() : $existingContacts;
     @endphp
 
     <div class="mt-6">
@@ -51,6 +64,45 @@
             createTransaction: {{ Js::from(old('create_transaction', $settlementGroup->financial_transaction_id ? 'true' : 'false') == '1' || old('create_transaction', $settlementGroup->financial_transaction_id ? 'true' : 'false') === 'true') }},
             targetType: {{ Js::from(old('targetType', optional($settlementGroup->financialTransaction)->invoice ? 'card' : 'account')) }},
             contacts: {{ Js::from($alpineContacts) }},
+            allContacts: {{ Js::from($availableContacts) }},
+            contactSearch: '',
+            contactPickerOpen: false,
+
+            get availableContactsToAdd() {
+                const selectedIds = this.contacts.map(c => Number(c.id));
+                const term = (this.contactSearch || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+                return this.allContacts.filter(c => {
+                    if (selectedIds.includes(Number(c.id))) return false;
+                    if (!term) return true;
+                    const normalizedName = c.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                    return normalizedName.includes(term);
+                });
+            },
+
+            addContact(contact) {
+                if (this.contacts.some(c => Number(c.id) === Number(contact.id))) return;
+                this.contacts.push({
+                    id: contact.id,
+                    name: contact.name,
+                    avatar_url: contact.avatar_url,
+                    initials: contact.initials,
+                    amount: '',
+                });
+                this.contactSearch = '';
+                this.contactPickerOpen = false;
+                if (this.mode === 'equal') {
+                    this.recalcEqualShares();
+                }
+            },
+
+            removeContact(contactId) {
+                if (this.contacts.length <= 1) return;
+                this.contacts = this.contacts.filter(c => Number(c.id) !== Number(contactId));
+                if (this.mode === 'equal') {
+                    this.recalcEqualShares();
+                }
+            },
 
             get totalPeople() {
                 return this.mode === 'equal' && !this.includeMe
