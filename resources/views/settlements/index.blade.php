@@ -353,7 +353,7 @@
             </div>
 
             <x-tooltip text="Limpar seleção" id="clear-selection-tooltip" class="justify-self-end">
-                <button type="button" class="min-h-11 min-w-11 shrink-0 cursor-pointer rounded-xl p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900" aria-label="Limpar seleção" aria-describedby="clear-selection-tooltip" @click="selectedIds = []">
+                <button type="button" class="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900" aria-label="Limpar seleção" aria-describedby="clear-selection-tooltip" @click="selectedIds = []">
                     <x-heroicon-o-x-mark class="size-5" />
                 </button>
             </x-tooltip>
