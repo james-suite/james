@@ -105,9 +105,9 @@
             },
 
             get totalPeople() {
-                return this.mode === 'equal' && !this.includeMe
-                    ? this.contacts.length
-                    : this.contacts.length + 1;
+                return this.includeMe
+                    ? this.contacts.length + 1
+                    : this.contacts.length;
             },
 
             get sharePerPerson() {

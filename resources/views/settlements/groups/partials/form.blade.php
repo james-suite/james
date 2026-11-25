@@ -48,7 +48,7 @@
             <div class="flex items-center justify-between gap-3 mb-6">
                 <h3 class="text-xs font-bold text-neutral-400 uppercase tracking-widest">Participantes</h3>
 
-                <div class="relative" x-show="allContacts.length > contacts.length" @click.outside="contactPickerOpen = false">
+                <div class="relative" x-show="!includeMe || allContacts.length > contacts.length" @click.outside="contactPickerOpen = false">
                     <x-button
                         type="button"
                         color="outline"
@@ -73,6 +73,16 @@
                             @keydown.escape.prevent.stop="contactPickerOpen = false"
                         >
                         <ul class="max-h-52 overflow-y-auto space-y-0.5">
+                            <li x-show="!includeMe">
+                                <button
+                                    type="button"
+                                    class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-neutral-900 hover:bg-accent/10 cursor-pointer"
+                                    @click="includeMe = true; contactPickerOpen = false"
+                                >
+                                    <span class="flex size-7 items-center justify-center rounded-md bg-accent/20 text-xs font-bold text-accent shrink-0">EU</span>
+                                    <span class="truncate font-semibold">Minha Parte</span>
+                                </button>
+                            </li>
                             <template x-for="candidate in availableContactsToAdd" :key="candidate.id">
                                 <li>
                                     <button
@@ -90,7 +100,7 @@
                                     </button>
                                 </li>
                             </template>
-                            <li class="px-2.5 py-3 text-center text-xs text-neutral-400" x-show="availableContactsToAdd.length === 0">
+                            <li class="px-2.5 py-3 text-center text-xs text-neutral-400" x-show="includeMe && availableContactsToAdd.length === 0">
                                 Nenhum contato disponível.
                             </li>
                         </ul>
@@ -99,8 +109,10 @@
             </div>
 
             <div class="space-y-3">
+                <input type="hidden" name="include_me" :value="includeMe ? 1 : 0">
+
                 <!-- Minha Parte -->
-                <div class="flex items-center gap-4 p-4 rounded-xl border border-accent/30 bg-accent/5" x-show="mode === 'exact' || includeMe">
+                <div class="flex items-center gap-4 p-4 rounded-xl border border-accent/30 bg-accent/5" x-show="includeMe">
                     <div class="shrink-0 flex items-center justify-center w-10 h-10 rounded-md bg-accent/20 text-accent font-bold text-sm">
                         EU
                     </div>
@@ -125,15 +137,15 @@
                             type="button"
                             class="flex size-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
                             aria-label="Remover minha parte"
-                            x-show="mode === 'equal'"
-                            @click="includeMe = false"
+                            @click="includeMe = false; myAmount = '0.00'"
                         >
                             <x-heroicon-o-x-mark class="size-4" />
                         </button>
-                        <div class="size-9 shrink-0" x-show="mode === 'exact' && contacts.length > 1" aria-hidden="true"></div>
                     </div>
                 </div>
-                <input x-show="mode === 'equal'" type="hidden" name="my_amount" :value="calculatedMyAmount.toFixed(2)">
+                <template x-if="mode === 'equal' || !includeMe">
+                    <input type="hidden" name="my_amount" :value="(mode === 'equal' ? calculatedMyAmount : 0).toFixed(2)">
+                </template>
 
                 <!-- Contatos -->
                 <template x-for="(contact, index) in contacts" :key="contact.id">
@@ -171,7 +183,7 @@
                             >
                                 <x-heroicon-o-x-mark class="size-4" />
                             </button>
-                            <div class="size-9 shrink-0" x-show="contacts.length <= 1 && mode === 'equal'" aria-hidden="true"></div>
+                            <div class="size-9 shrink-0" x-show="contacts.length <= 1 && includeMe" aria-hidden="true"></div>
                         </div>
                     </div>
                 </template>
@@ -203,11 +215,6 @@
                 <x-radio-block name="mode" x-model="mode" value="equal" icon="heroicon-o-equals" label="Partes Iguais" />
                 <x-radio-block name="mode" x-model="mode" value="exact" icon="heroicon-o-pencil" label="Valores Exatos" />
             </x-radio-block-group>
-
-            <div class="pt-2" x-show="mode === 'equal'" x-transition>
-                <input type="hidden" name="include_me" value="0">
-                <x-switch name="include_me" x-model="includeMe" label="Eu participei do consumo" value="1" color="accent" />
-            </div>
 
             {{-- Transação Financeira --}}
             <div class="space-y-4 pt-4 border-t border-neutral-100">
@@ -242,7 +249,7 @@
                         </div>
                     </div>
 
-                    <div class="pt-2" x-show="mode === 'exact' || includeMe">
+                    <div class="pt-2" x-show="includeMe">
                         <x-tags-selector name="tags[]" :options="$tags" label="Categoria (Minha Parte)" :value="old('tags', isset($existingTagIds) ? $existingTagIds : [])" :primaryValue="old('primary_tag_id', isset($existingPrimaryTagId) ? $existingPrimaryTagId : null)" />
                     </div>
                 </div>
