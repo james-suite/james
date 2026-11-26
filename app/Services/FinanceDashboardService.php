@@ -97,7 +97,9 @@ class FinanceDashboardService
 
         $otherDebts = $otherDebtsQuery->sum('amount');
 
-        $netBalance = $accountBalance - $creditCardDebt - $otherDebts;
+        $finiteRecurrencesDebt = $this->getFiniteExpenseRecurrencesTotal($includeInvestments);
+
+        $netBalance = $accountBalance - $creditCardDebt - $otherDebts - $finiteRecurrencesDebt;
 
         $totalsQuery = FinancialTransaction::posted();
 
@@ -120,6 +122,28 @@ class FinanceDashboardService
             'expense' => $expense,
             'currentBalance' => $currentBalance,
         ];
+    }
+
+    private function getFiniteExpenseRecurrencesTotal(bool $includeInvestments = false): float
+    {
+        $recurrences = $this->getActiveRecurrences()
+            ->filter(fn (FinancialRecurrence $r): bool => $r->type === 'expense' && $r->end_date !== null);
+
+        if (! $includeInvestments) {
+            $recurrences = $recurrences->filter(function (FinancialRecurrence $r): bool {
+                if ($r->financialAccount && $r->financialAccount->type === FinancialAccountType::Investment) {
+                    return false;
+                }
+
+                if ($r->financialCreditCard && $r->financialCreditCard->financialAccount && $r->financialCreditCard->financialAccount->type === FinancialAccountType::Investment) {
+                    return false;
+                }
+
+                return true;
+            });
+        }
+
+        return (float) $recurrences->sum(fn (FinancialRecurrence $r): float => $r->remainingAmount());
     }
 
     public function getCashFlowProjections(Carbon $referenceDate, bool $includeInvestments = false): array

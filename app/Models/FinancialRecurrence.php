@@ -94,6 +94,66 @@ class FinancialRecurrence extends Model
     }
 
     /**
+     * Count remaining scheduled occurrences from next_processing_date through end_date (inclusive).
+     */
+    public function remainingOccurrencesCount(): int
+    {
+        if (! $this->is_active || $this->end_date === null || $this->next_processing_date === null) {
+            return 0;
+        }
+
+        $cursor = $this->next_processing_date->copy()->startOfDay();
+        $endDate = $this->end_date->copy()->startOfDay();
+
+        if ($cursor->gt($endDate)) {
+            return 0;
+        }
+
+        $count = 0;
+
+        while ($cursor->lte($endDate)) {
+            $count++;
+
+            if ($this->frequency === 'monthly') {
+                $monthsSinceStart = (($cursor->year - $this->start_date->year) * 12)
+                    + $cursor->month
+                    - $this->start_date->month
+                    + 1;
+                $next = $this->start_date->copy()->startOfDay()->addMonthsNoOverflow($monthsSinceStart);
+
+                while ($next->lte($cursor)) {
+                    $monthsSinceStart++;
+                    $next = $this->start_date->copy()->startOfDay()->addMonthsNoOverflow($monthsSinceStart);
+                }
+
+                $cursor = $next;
+            } elseif ($this->frequency === 'yearly') {
+                $yearsSinceStart = $cursor->year - $this->start_date->year + 1;
+                $next = $this->start_date->copy()->startOfDay()->addYearsNoOverflow($yearsSinceStart);
+
+                while ($next->lte($cursor)) {
+                    $yearsSinceStart++;
+                    $next = $this->start_date->copy()->startOfDay()->addYearsNoOverflow($yearsSinceStart);
+                }
+
+                $cursor = $next;
+            } else {
+                break;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Calculate the remaining committed amount for a finite recurrence (with end_date).
+     */
+    public function remainingAmount(): float
+    {
+        return round((float) $this->amount * $this->remainingOccurrencesCount(), 2);
+    }
+
+    /**
      * Get all of the tags for the recurrence.
      */
     public function tags()

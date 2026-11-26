@@ -6,6 +6,7 @@ use App\Enums\TransactionStatus;
 use App\Models\FinancialAccount;
 use App\Models\FinancialCreditCard;
 use App\Models\FinancialCreditCardInvoice;
+use App\Models\FinancialRecurrence;
 use App\Models\FinancialTransaction;
 use App\Services\FinanceDashboardService;
 use Illuminate\Support\Carbon;
@@ -36,6 +37,89 @@ it('calculates KPIs correctly', function () {
         ->and($kpis['expense'])->toEqual(200)
         ->and($kpis['currentBalance'])->toEqual(300)
         ->and($kpis['netBalance'])->toEqual(300); // Because account balance is also 300
+});
+
+it('subtracts remaining occurrences of active expense recurrences with end_date from netBalance only', function () {
+    $account = FinancialAccount::factory()->create(['type' => FinancialAccountType::Checking]);
+    $investmentAccount = FinancialAccount::factory()->create(['type' => FinancialAccountType::Investment]);
+
+    FinancialTransaction::factory()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'income',
+        'amount' => 1000,
+        'date' => '2026-01-01',
+        'status' => TransactionStatus::Posted,
+    ]);
+
+    // Finite monthly expense recurrence: 3 remaining occurrences (Jan, Feb, Mar) = 3 * 100 = 300
+    FinancialRecurrence::factory()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'expense',
+        'amount' => 100,
+        'frequency' => 'monthly',
+        'start_date' => '2026-01-10',
+        'next_processing_date' => '2026-01-10',
+        'end_date' => '2026-03-10',
+        'is_active' => true,
+    ]);
+
+    // Open-ended expense recurrence (no end_date): must NOT be subtracted
+    FinancialRecurrence::factory()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'expense',
+        'amount' => 50,
+        'frequency' => 'monthly',
+        'start_date' => '2026-01-10',
+        'next_processing_date' => '2026-01-10',
+        'end_date' => null,
+        'is_active' => true,
+    ]);
+
+    // Inactive finite expense recurrence: must NOT be subtracted
+    FinancialRecurrence::factory()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'expense',
+        'amount' => 80,
+        'frequency' => 'monthly',
+        'start_date' => '2026-01-10',
+        'next_processing_date' => '2026-01-10',
+        'end_date' => '2026-03-10',
+        'is_active' => false,
+    ]);
+
+    // Finite income recurrence: must NOT be added to netBalance
+    FinancialRecurrence::factory()->create([
+        'financial_account_id' => $account->id,
+        'type' => 'income',
+        'amount' => 200,
+        'frequency' => 'monthly',
+        'start_date' => '2026-01-10',
+        'next_processing_date' => '2026-01-10',
+        'end_date' => '2026-03-10',
+        'is_active' => true,
+    ]);
+
+    // Investment account finite expense recurrence: excluded when includeInvestments is false
+    FinancialRecurrence::factory()->create([
+        'financial_account_id' => $investmentAccount->id,
+        'type' => 'expense',
+        'amount' => 75,
+        'frequency' => 'monthly',
+        'start_date' => '2026-01-10',
+        'next_processing_date' => '2026-01-10',
+        'end_date' => '2026-02-10',
+        'is_active' => true,
+    ]);
+
+    $service = new FinanceDashboardService;
+
+    expect($service->getKpiNumbers(false))
+        ->currentBalance->toEqual(1000.0)
+        ->netBalance->toEqual(700.0);
+
+    expect($service->getKpiNumbers(true))
+        ->currentBalance->toEqual(1000.0)
+        ->netBalance->toEqual(550.0);
 });
 
 it('does not expose drafts in dashboard totals or recent transactions', function () {
